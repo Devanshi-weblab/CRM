@@ -9,7 +9,7 @@ exports.listEmployees = async (req, res) => {
   try {
     const companyId = req.session.user.companyId;
     const employees = await User.find({ companyId, role: 'employee' });
-    res.render('employees/list', { employees });
+    res.render('employees/list', { employees});
   } catch (err) {
     res.status(500).send('Error fetching employees: ' + err.message);
   }
@@ -49,7 +49,7 @@ exports.addEmployee = async (req, res) => {
 // Render edit form
 exports.renderEditEmployee = async (req, res) => {
   const employee = await User.findById(req.params.id);
-  res.render('employees/edit', { employee });
+  res.render('employees/edit', { employee});
 };
 
 // Handle update

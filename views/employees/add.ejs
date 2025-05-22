@@ -1,12 +1,48 @@
-<h2>Add New Employee</h2>
-<form method="POST" action="/employees/add">
-  <div class="form-group">
-    <label>Name:</label>
-    <input name="name" class="form-control" required>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Employee</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <%- include('../partials/navbar') %>
+  <div class="max-w-xl mx-auto py-10 px-4">
+    <a href="/dashboard/admin" class="inline-flex items-center px-4 py-2 mb-6 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition text-sm">
+      <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+    </a>
+    <div class="bg-white rounded-lg shadow p-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+        <i class="fas fa-user-plus mr-2 text-indigo-600"></i> Add New Employee
+      </h2>
+      <form method="POST" action="/employees/add" class="space-y-6">
+        <div>
+          <label for="name" class="block text-sm font-medium text-gray-700">Full Name</label>
+          <input type="text" name="name" id="name" required
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            placeholder="John Doe">
+        </div>
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+          <input type="email" name="email" id="email" required
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            placeholder="john@example.com">
+        </div>
+        <div class="flex justify-end">
+          <button type="submit"
+            class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md shadow hover:bg-indigo-700 transition">
+            <i class="fas fa-plus mr-2"></i> Add Employee
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
-  <div class="form-group">
-    <label>Email:</label>
-    <input name="email" type="email" class="form-control" required>
-  </div>
-  <button class="btn btn-success">Add Employee</button>
-</form>
+  <%- include('../partials/footer') %>
+</body>
+</html>

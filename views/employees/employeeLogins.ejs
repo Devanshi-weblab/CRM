@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Login Logs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <%- include('../partials/navbar') %>
+  <div class="max-w-5xl mx-auto py-10 px-4">
+    <div class="bg-white rounded-lg shadow p-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+        <i class="fas fa-clock mr-2 text-blue-500"></i> Login Logs for <span class="ml-2"><%= employee.name %></span>
+      </h2>
+      <p class="text-gray-600 mb-4">Email: <%= employee.email %></p>
+      <a href="/employees" class="inline-flex items-center px-4 py-2 mb-4 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition text-sm">
+        <i class="fas fa-arrow-left mr-2"></i> Back to Employee List
+      </a>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Login Time</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Agent</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% logs.forEach(log => { %>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= new Date(log.loginTime).toLocaleString() %></td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= log.ipAddress %></td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= log.location %></td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= log.userAgent %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <%- include('../partials/footer') %>
+</body>
+</html>

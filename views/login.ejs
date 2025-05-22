@@ -1,21 +1,78 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Login</title>
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM - Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .fade-in {
+      animation: fadeIn 1.2s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: none; }
+    }
+    .slide-in {
+      animation: slideIn 1.2s cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(60px); }
+      to { opacity: 1; transform: none; }
+    }
+  </style>
 </head>
-<body class="container mt-5">
-  <h2>Login</h2>
-  <form method="POST" action="/auth/login">
-    <div class="form-group">
-      <label>Email:</label>
-      <input type="email" name="email" class="form-control" required />
+<body class="bg-gradient-to-br from-indigo-100 via-white to-blue-100 min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 px-4 py-12 fade-in">
+    <!-- Left: Welcome Content -->
+    <div class="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-6 slide-in">
+      <div class="flex items-center space-x-3">
+        <span class="text-4xl text-indigo-600"><i class="fas fa-chart-line"></i></span>
+        <span class="text-3xl font-extrabold text-gray-900 tracking-tight">Welcome to CRM Pro</span>
+      </div>
+      <p class="text-lg text-gray-600 max-w-md">Your all-in-one solution for managing clients, employees, and projects. Streamline your workflow, boost productivity, and grow your business with our modern CRM platform.</p>
+      <ul class="space-y-2 text-gray-700 text-base">
+        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Secure and easy login for admins and employees</li>
+        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Powerful dashboard and analytics</li>
+        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Manage clients, employees, and more</li>
+      </ul>
+      <img src="https://cdn.dribbble.com/users/1162077/screenshots/3848914/media/7ed7d5c9b6b1b1e3e7e2e6e6e6e6e6e6.png?resize=800x600&vertical=center" alt="CRM Illustration" class="w-80 rounded-xl shadow-lg border border-indigo-100 mt-4 animate-pulse" />
     </div>
-    <div class="form-group">
-      <label>Password:</label>
-      <input type="password" name="password" class="form-control" required />
+    <!-- Right: Login Form -->
+    <div class="flex-1 flex justify-center">
+      <div class="w-full max-w-md bg-white p-10 rounded-2xl shadow-2xl border border-indigo-100 fade-in">
+        <div class="flex flex-col items-center mb-6">
+          <span class="text-4xl text-indigo-600 mb-2"><i class="fas fa-user-shield"></i></span>
+          <h2 class="text-2xl font-bold text-gray-900">Sign in to your CRM account</h2>
+        </div>
+        <form class="space-y-6" method="POST" action="/auth/login">
+          <div>
+            <label for="email" class="block text-sm font-medium text-gray-700">Email address</label>
+            <input id="email" name="email" type="email" required 
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" 
+              placeholder="Email address">
+          </div>
+          <div>
+            <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+            <input id="password" name="password" type="password" required 
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" 
+              placeholder="Password">
+          </div>
+          <div>
+            <button type="submit" 
+              class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+              <i class="fas fa-sign-in-alt mr-2"></i> Sign in
+            </button>
+          </div>
+        </form>
+        <div class="mt-6 text-center text-gray-500 text-xs">
+          &copy; <%= new Date().getFullYear() %> CRM Pro. All rights reserved.
+        </div>
+      </div>
     </div>
-    <button type="submit" class="btn btn-primary">Login</button>
-  </form>
+  </div>
 </body>
 </html>

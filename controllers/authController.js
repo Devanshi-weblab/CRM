@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs');
+const geoip = require('geoip-lite');
 const User = require('../models/User');
 const Company = require('../models/Company');
+const LoginLog = require('../models/LoginLog');
 
 exports.renderLogin = (req, res) => {
   res.render('login');
@@ -53,6 +55,7 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) return res.status(400).send('Incorrect password');
 
+    // Setup session
     req.session.user = {
       id: user._id,
       name: user.name,
@@ -60,6 +63,17 @@ exports.login = async (req, res) => {
       companyId: user.companyId._id,
       companyName: user.companyId.name
     };
+
+    // Record login log
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const geo = geoip.lookup(ip);
+
+    await LoginLog.create({
+      userId: user._id,
+      ipAddress: ip,
+      location: geo ? `${geo.city || 'Unknown'}, ${geo.country || 'Unknown'}` : 'Unknown',
+      userAgent: req.headers['user-agent']
+    });
 
     // Redirect based on role
     if (user.role === 'admin') {
@@ -80,4 +94,3 @@ exports.logout = (req, res) => {
     res.redirect('/auth/login');
   });
 };
-

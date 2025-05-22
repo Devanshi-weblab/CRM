@@ -1,41 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Edit Client</title>
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
 </head>
-<body>
-  <div class="container mt-5">
-    <h2>Edit Client</h2>
-    <form action="/clients/edit/<%= client._id %>" method="POST">
-      <div class="form-group">
-        <label>Name</label>
-        <input name="name" class="form-control" value="<%= client.name %>" required>
-      </div>
-      <div class="form-group">
-        <label>Contact Number</label>
-        <input name="contactNumber" class="form-control" value="<%= client.contactNumber %>">
-      </div>
-      <div class="form-group">
-        <label>Email</label>
-        <input name="email" type="email" class="form-control" value="<%= client.email %>">
-      </div>
-      <div class="form-group">
-        <label>Address</label>
-        <input name="address" class="form-control" value="<%= client.address %>">
-      </div>
-      <div class="form-group">
-        <label>Meeting Date</label>
-        <input name="meetingDate" type="date" class="form-control" value="<%= client.meetingDate ? client.meetingDate.toISOString().split('T')[0] : '' %>">
-      </div>
-      <div class="form-group">
-        <label>Notes</label>
-        <textarea name="notes" class="form-control"><%= client.notes %></textarea>
-      </div>
-
-      <button class="btn btn-primary">Update Client</button>
-      <a href="/clients" class="btn btn-secondary">Cancel</a>
-    </form>
+<body class="bg-gray-50 min-h-screen">
+  <%- include('../partials/employee-navbar') %>
+  <div class="max-w-xl mx-auto py-10 px-4">
+    <a href="<%= user && user.role === 'admin' ? '/dashboard/admin' : '/dashboard/employee' %>" class="inline-flex items-center px-4 py-2 ...">
+      <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+    </a>
+    <div class="bg-white rounded-lg shadow p-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+        <i class="fas fa-user-edit mr-2 text-yellow-500"></i> Edit Client
+      </h2>
+      <form action="/clients/edit/<%= client._id %>" method="POST" class="space-y-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Name</label>
+          <input name="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm" value="<%= client.name %>" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Contact Number</label>
+          <input name="contactNumber" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm" value="<%= client.contactNumber %>">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Email</label>
+          <input name="email" type="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm" value="<%= client.email %>">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Address</label>
+          <input name="address" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm" value="<%= client.address %>">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Meeting Date</label>
+          <input name="meetingDate" type="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm" value="<%= client.meetingDate ? client.meetingDate.toISOString().split('T')[0] : '' %>">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Notes</label>
+          <textarea name="notes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm"><%= client.notes %></textarea>
+        </div>
+        <div class="flex justify-end">
+          <button class="inline-flex items-center px-4 py-2 bg-yellow-500 text-white rounded-md shadow hover:bg-yellow-600 transition">
+            <i class="fas fa-save mr-2"></i> Update Client
+          </button>
+          <a href="/clients" class="inline-flex items-center px-4 py-2 ml-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
+            <i class="fas fa-times mr-2"></i> Cancel
+          </a>
+        </div>
+      </form>
+    </div>
   </div>
+  <%- include('../partials/employee-footer') %>
 </body>
 </html>

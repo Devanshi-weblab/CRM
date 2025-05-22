@@ -1,5 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const User = require('../models/User');
+const Client = require('../models/Client');
+
 
 // Middleware to protect routes
 function isAuthenticated(req, res, next) {
@@ -18,13 +21,25 @@ function isEmployee(req, res, next) {
 }
 
 // Admin dashboard
-router.get('/admin', isAuthenticated, isAdmin, (req, res) => {
-  res.render('admin-dashboard', { user: req.session.user });
+router.get('/admin', isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const companyId = req.session.user.companyId;
+    const totalEmployees = await User.countDocuments({ companyId, role: 'employee' });
+    const totalClients = await Client.countDocuments({ companyId });
+    res.render('admin-dashboard', {
+      user: req.session.user,
+      totalEmployees,
+      totalClients
+    });
+  } catch (err) {
+    res.status(500).send('Error loading dashboard');
+  }
 });
 
 // Employee dashboard
 router.get('/employee', isAuthenticated, isEmployee, (req, res) => {
   res.render('employee-dashboard', { user: req.session.user });
 });
+
 
 module.exports = router;

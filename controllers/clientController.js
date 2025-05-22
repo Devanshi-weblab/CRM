@@ -11,13 +11,24 @@ exports.getAllClients = async (req, res) => {
 };
 
 // GET form to add client
+
 exports.getAddClientForm = (req, res) => {
-  res.render('clients/add');
+  const user = req.session.user;
+  if (!user) return res.redirect('/auth/login'); // Ensure logged in
+
+  // Pass session data to the view
+  res.render('clients/add', {
+    companyId: user.companyId,
+    addedBy: user.id
+  });
 };
 
 // POST add client
 exports.addClient = async (req, res) => {
   try {
+    const user = req.session.user;
+    if (!user) return res.redirect('/auth/login'); // Ensure logged in
+
     const client = new Client({
       name: req.body.name,
       contactNumber: req.body.contactNumber,
@@ -25,9 +36,10 @@ exports.addClient = async (req, res) => {
       address: req.body.address,
       meetingDate: req.body.meetingDate,
       notes: req.body.notes,
-      companyId: req.body.companyId,
-      addedBy: req.body.addedBy
+      companyId: user.companyId, // pulled from session
+      addedBy: user.id           // pulled from session
     });
+
     await client.save();
     res.redirect('/clients');
   } catch (err) {

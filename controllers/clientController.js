@@ -4,10 +4,27 @@ const StatusOption = require('../models/StatusOption');
 // GET all clients
 exports.getAllClients = async (req, res) => {
   try {
-    const clients = await Client.find()
+    const user = req.session.user;
+    if (!user) return res.redirect('/auth/login');
+
+    // Get status options for the filter dropdown
+    const statusOptions = await StatusOption.find({ companyId: user.companyId });
+
+    // Build query based on status filter
+    const query = { companyId: user.companyId };
+    if (req.query.status) {
+      query.status = req.query.status;
+    }
+
+    const clients = await Client.find(query)
       .populate('addedBy', 'name')
       .populate('status', 'name color');
-    res.render('clients/list', { clients });
+
+    res.render('clients/list', { 
+      clients,
+      statusOptions,
+      selectedStatus: req.query.status || ''
+    });
   } catch (err) {
     res.status(500).send(err.message);
   }

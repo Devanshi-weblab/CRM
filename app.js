@@ -5,12 +5,13 @@ const ejs = require('ejs');
 const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
+require('dotenv').config();
 
 // Create Express app
 const app = express();
 
 // MongoDB connection
-const url = 'mongodb://127.0.0.1:27017/CRMDb';
+const url = process.env.MONGODB_URI;
 const options = {
   useNewUrlParser: true,
   useUnifiedTopology: true

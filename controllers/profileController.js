@@ -3,7 +3,7 @@ const User = require('../models/User');
 
 exports.renderProfile = async (req, res) => {
   const user = await User.findById(req.session.user.id);
-  res.render('profile', { user });
+  res.render('profile', { user, successMessage: req.query.success });
 };
 
 exports.updatePassword = async (req, res) => {
@@ -21,7 +21,7 @@ exports.updatePassword = async (req, res) => {
     user.passwordHash = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    res.send('Password updated successfully.');
+    res.redirect('/profile?success=Password updated successfully');
   } catch (err) {
     res.status(500).send('Error updating password: ' + err.message);
   }

@@ -1,3 +1,4 @@
+const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const geoip = require('geoip-lite');
 const User = require('../models/User');
@@ -44,7 +45,6 @@ exports.signup = async (req, res) => {
     res.status(500).send('Error during signup: ' + err.message);
   }
 };
-
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -64,14 +64,31 @@ exports.login = async (req, res) => {
       companyName: user.companyId.name
     };
 
-    // Record login log
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    const geo = geoip.lookup(ip);
+    // Get IP address
+    const ip =
+      req.headers['x-forwarded-for']?.split(',')[0] ||
+      req.connection.remoteAddress ||
+      req.socket?.remoteAddress;
 
+    // Fetch geolocation using ip-api.com
+    let location = 'Unknown';
+    try {
+      const geoRes = await axios.get(`http://ip-api.com/json/${ip}`);
+      const data = geoRes.data;
+
+      if (data.status === 'success') {
+        const { city, district, regionName, country, zip } = data;
+        location = `${city || 'Unknown'}, ${district || 'Unknown'}, ${regionName || 'Unknown'}, ${country || 'Unknown'}, ${zip || 'Unknown'}`;
+      }
+    } catch (geoErr) {
+      console.error('Geo API error:', geoErr.message);
+    }
+
+    // Save login log
     await LoginLog.create({
       userId: user._id,
       ipAddress: ip,
-      location: geo ? `${geo.city || 'Unknown'}, ${geo.country || 'Unknown'}` : 'Unknown',
+      location: location,
       userAgent: req.headers['user-agent']
     });
 

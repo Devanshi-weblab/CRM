@@ -78,7 +78,7 @@ exports.login = async (req, res) => {
 
       if (data.status === 'success') {
         const { city, district, regionName, country, zip } = data;
-        location = `${city || 'Unknown'}, ${district || 'Unknown'}, ${regionName || 'Unknown'}, ${country || 'Unknown'}, ${zip || 'Unknown'}`;
+        location = `${city || 'Unknown'}, ${regionName || 'Unknown'}, ${country || 'Unknown'}, ${zip || 'Unknown'}`;
       }
     } catch (geoErr) {
       console.error('Geo API error:', geoErr.message);

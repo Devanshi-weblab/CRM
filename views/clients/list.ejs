@@ -21,6 +21,38 @@
     <a href="<%= user && user.role === 'admin' ? '/dashboard/admin' : '/dashboard/employee' %>" class="inline-flex items-center px-4 py-2 ...">
       <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
     </a>
+
+    <!-- Status Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- No Status -->
+      <div class="bg-white rounded-lg shadow p-6 border-l-4 border-gray-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">No Status</p>
+            <p class="text-2xl font-semibold text-gray-900"><%= statusCounts.noStatus || 0 %></p>
+          </div>
+          <div class="bg-gray-100 p-3 rounded-full">
+            <i class="fas fa-question text-gray-500"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Options -->
+      <% statusOptions.forEach(function(option) { %>
+        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-indigo-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600"><%= option.name %></p>
+              <p class="text-2xl font-semibold text-gray-900"><%= statusCounts[option._id.toString()] || 0 %></p>
+            </div>
+            <div class="bg-indigo-100 p-3 rounded-full">
+              <i class="fas fa-tag text-indigo-500"></i>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+
     <div class="flex items-center justify-between mb-8">
       <h2 class="text-2xl font-bold text-gray-900">Clients</h2>
       <a href="/clients/add" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md shadow hover:bg-indigo-700 transition">

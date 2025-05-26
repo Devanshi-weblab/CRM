@@ -20,10 +20,29 @@ exports.getAllClients = async (req, res) => {
       .populate('addedBy', 'name')
       .populate('status', 'name color');
 
+    // Initialize status counts with all status options
+    const statusCounts = {};
+    
+    // Add count for clients with no status
+    statusCounts.noStatus = await Client.countDocuments({ 
+      companyId: user.companyId, 
+      status: { $exists: false } 
+    });
+
+    // Get counts for each status option
+    for (const statusOption of statusOptions) {
+      statusCounts[statusOption._id.toString()] = await Client.countDocuments({
+        companyId: user.companyId,
+        status: statusOption._id
+      });
+    }
+
     res.render('clients/list', { 
       clients,
       statusOptions,
-      selectedStatus: req.query.status || ''
+      selectedStatus: req.query.status || '',
+      statusCounts,
+      user
     });
   } catch (err) {
     res.status(500).send(err.message);

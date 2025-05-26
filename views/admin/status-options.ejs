@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Status Options</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <%- include('../partials/navbar') %>
+
+  <div class="flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-lg min-h-screen hidden md:block">
+      <div class="h-full px-3 py-6">
+        <nav class="space-y-2">
+          <a href="/dashboard/admin" class="flex items-center px-4 py-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium">
+            <i class="fas fa-home w-5 h-5 mr-3"></i> Dashboard
+          </a>
+          <a href="/clients" class="flex items-center px-4 py-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium">
+            <i class="fas fa-users w-5 h-5 mr-3"></i> Clients
+          </a>
+          <a href="/employees" class="flex items-center px-4 py-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium">
+            <i class="fas fa-user-tie w-5 h-5 mr-3"></i> Employees
+          </a>
+          <a href="/employees/add" class="flex items-center px-4 py-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium">
+            <i class="fas fa-user-plus w-5 h-5 mr-3"></i> Add Employee
+          </a>
+          <a href="/admin/status-options" class="flex items-center px-4 py-2 bg-indigo-50 text-indigo-600 rounded-md font-medium">
+            <i class="fas fa-tags w-5 h-5 mr-3"></i> Status Options
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8">
+      <div class="max-w-4xl mx-auto">
+        <div class="flex items-center justify-between mb-8">
+          <h1 class="text-2xl font-bold text-gray-900">Manage Status Options</h1>
+          <button onclick="openAddModal()" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md shadow hover:bg-indigo-700 transition">
+            <i class="fas fa-plus mr-2"></i> Add Status
+          </button>
+        </div>
+
+        <!-- Status Options Table -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <% statusOptions.forEach(option => { %>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 rounded text-sm bg-gray-100 text-gray-800">
+                      <%= option.name %>
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= option.createdBy?.name || 'Unknown' %></td>
+                  <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= option.createdAt.toLocaleDateString() %></td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <button onclick="deleteStatusOption('<%= option._id %>')" class="text-red-600 hover:text-red-900">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Status Modal -->
+  <div id="addStatusModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+      <div class="mt-3">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Add New Status</h3>
+        <form id="addStatusForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Status Name</label>
+            <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
+          <div class="flex justify-end space-x-3">
+            <button type="button" onclick="closeAddModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+              Cancel
+            </button>
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+              Add Status
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openAddModal() {
+      document.getElementById('addStatusModal').classList.remove('hidden');
+    }
+
+    function closeAddModal() {
+      document.getElementById('addStatusModal').classList.add('hidden');
+    }
+
+    document.getElementById('addStatusForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      
+      try {
+        const response = await fetch('/api/status-options', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: formData.get('name')
+          })
+        });
+
+        if (response.ok) {
+          window.location.reload();
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Failed to add status option');
+        }
+      } catch (err) {
+        alert('An error occurred while adding the status option');
+      }
+    });
+
+    async function deleteStatusOption(id) {
+      if (!confirm('Are you sure you want to delete this status option?')) return;
+
+      try {
+        const response = await fetch(`/api/status-options/${id}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          window.location.reload();
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Failed to delete status option');
+        }
+      } catch (err) {
+        alert('An error occurred while deleting the status option');
+      }
+    }
+  </script>
+
+  <%- include('../partials/footer') %>
+</body>
+</html> 

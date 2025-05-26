@@ -75,6 +75,11 @@ app.use('/employees', employeeRoutes);
 const profileRoutes = require('./routes/profileRoutes');
 app.use('/profile', profileRoutes);
 
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/admin', adminRoutes);
+
+// API Routes
+app.use('/api/status-options', require('./routes/statusOptionRoutes'));
 
 // Server
 const port = process.env.PORT || 3000;

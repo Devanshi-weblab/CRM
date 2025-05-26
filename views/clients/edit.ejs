@@ -62,6 +62,18 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
           <textarea name="notes" rows="3"><%= client.notes %></textarea>
         </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select class="form-control" id="status" name="status">
+            <option value="">Select Status</option>
+            <% statusOptions.forEach(function(option) { %>
+              <option value="<%= option._id %>" 
+                      <%= client.status && client.status._id.toString() === option._id.toString() ? 'selected' : '' %>>
+                <%= option.name %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
         <div class="flex justify-end">
           <button class="inline-flex items-center px-4 py-2 bg-yellow-500 text-white rounded-md shadow hover:bg-yellow-600 transition">
             <i class="fas fa-save mr-2"></i> Update Client

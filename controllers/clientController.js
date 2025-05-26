@@ -1,33 +1,42 @@
 const Client = require('../models/Client');
+const StatusOption = require('../models/StatusOption');
 
 // GET all clients
 exports.getAllClients = async (req, res) => {
   try {
-    const clients = await Client.find().populate('addedBy', 'name');
-    res.render('clients/index', { clients });
+    const clients = await Client.find()
+      .populate('addedBy', 'name')
+      .populate('status', 'name color');
+    res.render('clients/list', { clients });
   } catch (err) {
     res.status(500).send(err.message);
   }
 };
 
 // GET form to add client
-
-exports.getAddClientForm = (req, res) => {
+exports.getAddClientForm = async (req, res) => {
   const user = req.session.user;
-  if (!user) return res.redirect('/auth/login'); // Ensure logged in
+  if (!user) return res.redirect('/auth/login');
 
-  // Pass session data to the view
-  res.render('clients/add', {
-    companyId: user.companyId,
-    addedBy: user.id
-  });
+  try {
+    const statusOptions = await StatusOption.find({ companyId: user.companyId });
+    console.log(statusOptions);
+    console.log(user.companyId );
+    res.render('clients/add', {
+      companyId: user.companyId,
+      addedBy: user.id,
+      statusOptions
+    });
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 };
 
 // POST add client
 exports.addClient = async (req, res) => {
   try {
     const user = req.session.user;
-    if (!user) return res.redirect('/auth/login'); // Ensure logged in
+    if (!user) return res.redirect('/auth/login');
 
     const client = new Client({
       name: req.body.name,
@@ -36,8 +45,9 @@ exports.addClient = async (req, res) => {
       address: req.body.address,
       meetingDate: req.body.meetingDate,
       notes: req.body.notes,
-      companyId: user.companyId, // pulled from session
-      addedBy: user.id           // pulled from session
+      status: req.body.status,
+      companyId: user.companyId,
+      addedBy: user.id
     });
 
     await client.save();
@@ -52,7 +62,9 @@ exports.getEditForm = async (req, res) => {
   try {
     const client = await Client.findById(req.params.id);
     if (!client) return res.status(404).send('Client not found');
-    res.render('clients/edit', { client });
+    
+    const statusOptions = await StatusOption.find({ companyId: client.companyId });
+    res.render('clients/edit', { client, statusOptions });
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -67,7 +79,8 @@ exports.updateClient = async (req, res) => {
       email: req.body.email,
       address: req.body.address,
       meetingDate: req.body.meetingDate,
-      notes: req.body.notes
+      notes: req.body.notes,
+      status: req.body.status
     });
     res.redirect('/clients');
   } catch (err) {

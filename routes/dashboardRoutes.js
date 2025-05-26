@@ -26,7 +26,7 @@ router.get('/admin', isAuthenticated, isAdmin, async (req, res) => {
     const companyId = req.session.user.companyId;
     const totalEmployees = await User.countDocuments({ companyId, role: 'employee' });
     const totalClients = await Client.countDocuments({ companyId });
-    res.render('admin-dashboard', {
+    res.render('admin/admin-dashboard', {
       user: req.session.user,
       totalEmployees,
       totalClients
@@ -38,7 +38,7 @@ router.get('/admin', isAuthenticated, isAdmin, async (req, res) => {
 
 // Employee dashboard
 router.get('/employee', isAuthenticated, isEmployee, (req, res) => {
-  res.render('employee-dashboard', { user: req.session.user });
+  res.render('employees/employee-dashboard', { user: req.session.user });
 });
 
 

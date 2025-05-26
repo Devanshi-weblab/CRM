@@ -72,6 +72,10 @@ app.use('/dashboard', dashboardRoutes);
 const employeeRoutes = require('./routes/employeeRoutes');
 app.use('/employees', employeeRoutes);
 
+const profileRoutes = require('./routes/profileRoutes');
+app.use('/profile', profileRoutes);
+
+
 // Server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

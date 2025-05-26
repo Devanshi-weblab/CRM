@@ -12,7 +12,11 @@
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-  <%- include('../partials/employee-navbar') %>
+  <% if (user && user.role === 'admin') { %>
+    <%- include('../partials/navbar') %>
+  <% } else { %>
+    <%- include('../partials/employee-navbar') %>
+  <% } %>
   <div class="max-w-xl mx-auto py-10 px-4">
     <a href="/clients" class="inline-flex items-center px-4 py-2 mb-6 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition text-sm">
       <i class="fas fa-arrow-left mr-2"></i> Back to Client List
@@ -59,6 +63,10 @@
       </form>
     </div>
   </div>
-  <%- include('../partials/employee-footer') %>
+  <% if (user && user.role === 'admin') { %>
+    <%- include('../partials/footer') %>
+  <% } else { %>
+    <%- include('../partials/employee-footer') %>
+  <% } %>
 </body>
 </html>

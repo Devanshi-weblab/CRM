@@ -7,6 +7,9 @@
       <div class="flex items-center space-x-4">
         <% if (user) { %>
           <span class="text-gray-700 font-medium"><%= user.name %></span>
+          <a href="/profile" class="text-gray-600 hover:text-gray-900 flex items-center">
+            <i class="fas fa-user mr-1"></i> Profile
+          </a>
           <a href="/auth/logout" class="text-gray-600 hover:text-gray-900 flex items-center">
             <i class="fas fa-sign-out-alt mr-1"></i> Logout
           </a>

@@ -6,7 +6,7 @@ const Company = require('../models/Company');
 const LoginLog = require('../models/LoginLog');
 
 exports.renderLogin = (req, res) => {
-  res.render('login');
+  res.render('login', { error: null });
 };
 
 exports.renderSignup = (req, res) => {
@@ -50,10 +50,14 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email }).populate('companyId');
-    if (!user) return res.status(400).send('User not found');
+    if (!user) {
+      return res.render('login', { error: 'User not found' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) return res.status(400).send('Incorrect password');
+    if (!isMatch) {
+      return res.render('login', { error: 'Incorrect password' });
+    }
 
     // Setup session
     req.session.user = {
@@ -99,7 +103,7 @@ exports.login = async (req, res) => {
       res.redirect('/dashboard/employee');
     }
   } catch (err) {
-    res.status(500).send('Login error: ' + err.message);
+    res.render('login', { error: 'An error occurred during login. Please try again.' });
   }
 };
 

@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const LoginLog = require('../models/LoginLog');
 
 // Default password for employees
 const DEFAULT_EMPLOYEE_PASSWORD = 'Admin@123';
@@ -86,4 +87,44 @@ exports.updateEmployee = async (req, res) => {
 exports.deleteEmployee = async (req, res) => {
   await User.findByIdAndDelete(req.params.id);
   res.redirect('/employees');
+};
+
+// Get employee login logs
+exports.getEmployeeLogins = async (req, res) => {
+
+  const userId = req.params.id;
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+  
+  try {
+    const employee = await User.findById(userId);
+
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalLogs = await LoginLog.countDocuments({ userId: employee._id });
+    const totalPages = Math.ceil(totalLogs / limit);
+
+    const logs = await LoginLog.find({ userId: employee._id, loginTime: { $gte: oneMonthAgo } })
+      .skip(skip)
+      .limit(limit)
+      .sort({ loginTime: -1 }); // Sort by newest first
+
+    res.render('employees/employeeLogins', {
+      employee,
+      logs,
+      pagination: {
+        page,
+        totalPages,
+        totalLogs,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    });
+  } catch (err) {
+    res.status(500).send('Error fetching login logs: ' + err.message);
+  }
 };

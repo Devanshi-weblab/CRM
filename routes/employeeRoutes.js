@@ -11,26 +11,7 @@ router.post('/add', employeeController.addEmployee);
 router.get('/edit/:id', employeeController.renderEditEmployee);
 router.post('/edit/:id', employeeController.updateEmployee);
 router.post('/delete/:id', employeeController.deleteEmployee);
+router.get('/logins/:id', employeeController.getEmployeeLogins);
 
-
-// Show login logs for an employee (last 30 days)
-router.get('/logins/:id', async (req, res) => {
-  const userId = req.params.id;
-  const oneMonthAgo = new Date();
-  oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
-
-  try {
-    const logs = await LoginLog.find({
-      userId,
-      loginTime: { $gte: oneMonthAgo }
-    }).sort({ loginTime: -1 });
-
-    const employee = await User.findById(userId);
-
-    res.render('employees/employeeLogins', { employee, logs });
-  } catch (err) {
-    res.status(500).send('Failed to fetch login logs');
-  }
-});
 
 module.exports = router;

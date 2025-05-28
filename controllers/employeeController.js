@@ -8,8 +8,31 @@ const DEFAULT_EMPLOYEE_PASSWORD = 'Admin@123';
 exports.listEmployees = async (req, res) => {
   try {
     const companyId = req.session.user.companyId;
-    const employees = await User.find({ companyId, role: 'employee' });
-    res.render('employees/list', { employees});
+    
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = 20;
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalEmployees = await User.countDocuments({ companyId, role: 'employee' });
+    const totalPages = Math.ceil(totalEmployees / limit);
+
+    const employees = await User.find({ companyId, role: 'employee' })
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 }); // Sort by newest first
+
+    res.render('employees/list', { 
+      employees,
+      pagination: {
+        page,
+        totalPages,
+        totalEmployees,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    });
   } catch (err) {
     res.status(500).send('Error fetching employees: ' + err.message);
   }

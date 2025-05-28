@@ -16,9 +16,21 @@ exports.getAllClients = async (req, res) => {
       query.status = req.query.status;
     }
 
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = 20;
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalClients = await Client.countDocuments(query);
+    const totalPages = Math.ceil(totalClients / limit);
+
     const clients = await Client.find(query)
       .populate('addedBy', 'name')
-      .populate('status', 'name color');
+      .populate('status', 'name color')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 }); // Sort by newest first
 
     // Initialize status counts with all status options
     const statusCounts = {};
@@ -42,7 +54,14 @@ exports.getAllClients = async (req, res) => {
       statusOptions,
       selectedStatus: req.query.status || '',
       statusCounts,
-      user
+      user,
+      pagination: {
+        page,
+        totalPages,
+        totalClients,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
     });
   } catch (err) {
     res.status(500).send(err.message);

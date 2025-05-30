@@ -91,13 +91,15 @@ exports.deleteEmployee = async (req, res) => {
 
 // Get employee login logs
 exports.getEmployeeLogins = async (req, res) => {
-
   const userId = req.params.id;
   const oneMonthAgo = new Date();
   oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
   
   try {
     const employee = await User.findById(userId);
+    if (!employee) {
+      return res.status(404).send('Employee not found');
+    }
 
     // Pagination
     const page = parseInt(req.query.page) || 1;
@@ -108,10 +110,15 @@ exports.getEmployeeLogins = async (req, res) => {
     const totalLogs = await LoginLog.countDocuments({ userId: employee._id });
     const totalPages = Math.ceil(totalLogs / limit);
 
-    const logs = await LoginLog.find({ userId: employee._id, loginTime: { $gte: oneMonthAgo } })
-      .skip(skip)
-      .limit(limit)
-      .sort({ loginTime: -1 }); // Sort by newest first
+    // Get logs with all location fields
+    const logs = await LoginLog.find({ 
+      userId: employee._id, 
+      loginTime: { $gte: oneMonthAgo } 
+    })
+    .select('loginTime ipAddress latitude longitude fullAddress city country postalCode userAgent')
+    .skip(skip)
+    .limit(limit)
+    .sort({ loginTime: -1 }); // Sort by newest first
 
     res.render('employees/employeeLogins', {
       employee,
@@ -125,6 +132,7 @@ exports.getEmployeeLogins = async (req, res) => {
       }
     });
   } catch (err) {
+    console.error('Error fetching login logs:', err);
     res.status(500).send('Error fetching login logs: ' + err.message);
   }
 };

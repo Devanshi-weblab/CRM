@@ -13,7 +13,7 @@
 </head>
 <body class="bg-gray-50 min-h-screen">
   <%- include('../partials/navbar') %>
-  <div class="max-w-5xl mx-auto py-10 px-4">
+  <div class="max-w-7xl mx-auto py-10 px-4">
     <div class="bg-white rounded-lg shadow p-8">
       <h2 class="text-2xl font-bold text-gray-900 mb-2 flex items-center">
         <i class="fas fa-clock mr-2 text-blue-500"></i> Login Logs for <span class="ml-2"><%= employee.name %></span>
@@ -28,15 +28,46 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Login Time</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location Details</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coordinates</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <% logs.forEach(log => { %>
               <tr>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= new Date(log.loginTime).toLocaleString() %></td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= log.ipAddress %></td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= log.location %></td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900">
+                  <%= new Date(log.loginTime).toLocaleString() %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900">
+                  <%= log.ipAddress %>
+                </td>
+                <td class="px-6 py-4 text-gray-900">
+                  <% if (log.fullAddress && log.fullAddress !== 'Unknown') { %>
+                    <div class="space-y-1">
+                      <div class="font-medium"><%= log.fullAddress %></div>
+                      <div class="text-sm text-gray-500">
+                        <%= log.city %>, <%= log.country %>
+                        <% if (log.postalCode && log.postalCode !== 'Unknown') { %>
+                          (<%= log.postalCode %>)
+                        <% } %>
+                      </div>
+                    </div>
+                  <% } else { %>
+                    <span class="text-gray-500">Location not available</span>
+                  <% } %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900">
+                  <% if (log.latitude && log.longitude) { %>
+                    <a href="https://www.google.com/maps?q=<%= log.latitude %>,<%= log.longitude %>" 
+                       target="_blank" 
+                       class="text-blue-600 hover:text-blue-800 flex items-center">
+                      <i class="fas fa-map-marker-alt mr-1"></i>
+                      <%= log.latitude.toFixed(6) %>, <%= log.longitude.toFixed(6) %>
+                    </a>
+                  <% } else { %>
+                    <span class="text-gray-500">Not available</span>
+                  <% } %>
+                </td>
               </tr>
             <% }) %>
           </tbody>

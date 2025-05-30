@@ -148,12 +148,29 @@
       getLocation();
     }
 
+    // Function to check if the context is secure
+    function isSecureContext() {
+      return window.isSecureContext || window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    }
+
     // Function to get user's location
     function getLocation() {
+      // Skip location tracking if not in secure context
+      if (!isSecureContext()) {
+        console.log('Skipping location tracking - not in secure context');
+        return;
+      }
+
       if (!navigator.geolocation) {
         console.error('Geolocation is not supported by your browser');
         return;
       }
+
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      };
 
       navigator.geolocation.getCurrentPosition(
         // Success callback
@@ -176,6 +193,8 @@
             const data = await response.json();
             if (!data.success) {
               console.error('Failed to update location:', data.error);
+            } else {
+              hideLocationModal(); // Hide modal on success
             }
           } catch (err) {
             console.error('Error updating location:', err);
@@ -184,16 +203,22 @@
         // Error callback
         (error) => {
           console.error('Error getting location:', error);
-          if (error.code === error.PERMISSION_DENIED) {
-            showLocationModal();
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              showLocationModal();
+              break;
+            case error.POSITION_UNAVAILABLE:
+              console.error('Location information is unavailable.');
+              break;
+            case error.TIMEOUT:
+              console.error('The request to get user location timed out.');
+              break;
+            case error.UNKNOWN_ERROR:
+              console.error('An unknown error occurred.');
+              break;
           }
         },
-        // Options
-        {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0
-        }
+        options
       );
     }
 

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Calendar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css' rel='stylesheet' />
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    /* Custom styles for calendar adjustments if needed */
+    .fc-event {
+        cursor: pointer;
+    }
+    /* Tooltip styles */
+    .calendar-tooltip {
+        position: absolute;
+        z-index: 50;
+        padding: 10px;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        pointer-events: none; /* Allow hovering over elements behind the tooltip */
+        display: none; /* Hidden by default */
+    }
+    .calendar-tooltip strong {
+        display: block;
+        margin-bottom: 5px;
+    }
+    .calendar-tooltip p {
+        margin-bottom: 3px;
+    }
+    /* Highlight style for date cell */
+    .fc-daygrid-day.has-meetings:hover {
+        background-color: #eef2ff; /* Light indigo background on hover */
+        cursor: pointer;
+    }
+    .fc-daygrid-day.has-meetings.hover-highlight {
+        background-color: #c7d2fe; /* Slightly darker indigo when tooltip is shown */
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <%- include('../partials/navbar') %>
+
+  <div class="flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-lg min-h-screen hidden md:block">
+      <div class="h-full px-3 py-6">
+        <div class="mb-8 px-4">
+          <h2 class="text-xl font-semibold text-gray-800">Admin Panel</h2>
+          <p class="text-sm text-gray-600">Welcome back, <%= user ? user.name : '' %></p>
+        </div>
+        <nav class="space-y-1">
+          <a href="/dashboard/admin" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium">
+            <i class="fas fa-home w-5 h-5 mr-3"></i> Dashboard
+          </a>
+          <a href="/clients" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium">
+            <i class="fas fa-users w-5 h-5 mr-3"></i> Clients
+          </a>
+          <a href="/employees" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium">
+            <i class="fas fa-user-tie w-5 h-5 mr-3"></i> Employees
+          </a>
+          <a href="/employees/add" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium">
+            <i class="fas fa-user-plus w-5 h-5 mr-3"></i> Add Employee
+          </a>
+           <a href="/admin/meetings" class="sidebar-link active flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium">
+            <i class="fas fa-calendar-alt w-5 h-5 mr-3"></i> Meeting Calendar
+          </a>
+          <a href="/admin/status-options" class="sidebar-link flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium">
+            <i class="fas fa-tags w-5 h-5 mr-3"></i> Status Options
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-2">
+      <div class="bg-white rounded-lg shadow p-8">
+        <div id='calendar' class="max-w-3xl mx-auto"></div>
+      </div>
+    </main>
+  </div>
+
+  <%- include('../partials/footer') %>
+
+  <div id="calendarTooltip" class="calendar-tooltip"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var calendarEl = document.getElementById('calendar');
+      var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: '/clients/api/meetings',
+        eventClick: function(info) {
+          if (info.event.url) {
+            window.open(info.event.url);
+            info.jsEvent.preventDefault();
+          }
+        },
+        eventDidMount: function(info) {
+            // Add a class to the day cell if it has events
+            const dateCell = info.el.closest('.fc-daygrid-day');
+            if (dateCell) {
+                dateCell.classList.add('has-meetings');
+            }
+        },
+        loading: function(bool) {
+          if (bool) {
+            console.log('Loading events...');
+          } else {
+            console.log('Events loaded.');
+            attachDateHoverListeners(); // Attach listeners after events load
+          }
+        }
+      });
+      calendar.render();
+
+      const tooltip = document.getElementById('calendarTooltip');
+      let currentTimeout = null;
+
+      function attachDateHoverListeners() {
+          // Remove existing listeners to avoid duplicates
+          document.querySelectorAll('.fc-daygrid-day').forEach(dayEl => {
+              dayEl.removeEventListener('mouseover', handleMouseOver);
+              dayEl.removeEventListener('mouseout', handleMouseOut);
+          });
+
+          // Add new listeners to date cells that might have meetings
+          document.querySelectorAll('.fc-daygrid-day.has-meetings').forEach(dayEl => {
+              dayEl.addEventListener('mouseover', handleMouseOver);
+              dayEl.addEventListener('mouseout', handleMouseOut);
+          });
+      }
+
+      async function handleMouseOver(event) {
+          const dayEl = event.currentTarget;
+          const date = dayEl.dataset.date; // FullCalendar stores date in data-date attribute
+          if (!date) return;
+
+          // Clear any existing timeout
+          if (currentTimeout) {
+              clearTimeout(currentTimeout);
+          }
+
+          // Add highlight immediately
+          dayEl.classList.add('hover-highlight');
+
+          // Fetch events for the specific date with a small delay
+          currentTimeout = setTimeout(async () => {
+              try {
+                  // Filter events client-side for the specific date
+                  const allEvents = calendar.getEvents();
+                  const eventsForDay = allEvents.filter(event => {
+                      const eventDate = event.start ? event.start.toISOString().split('T')[0] : null;
+                      return eventDate === date;
+                  });
+
+                  if (eventsForDay.length > 0) {
+                      let tooltipContent = '<strong>Meetings on ' + new Date(date).toLocaleDateString() + ':</strong>';
+                      eventsForDay.forEach(event => {
+                          const startTime = event.start ? new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                          tooltipContent += '<p>- ' + startTime + ' ' + event.title + '</p>';
+                      });
+
+                      tooltip.innerHTML = tooltipContent;
+                      tooltip.style.display = 'block';
+
+                      // Position the tooltip near the cursor or date cell
+                      const rect = dayEl.getBoundingClientRect();
+                      tooltip.style.left = (rect.left + window.scrollX) + 'px';
+                      tooltip.style.top = (rect.bottom + window.scrollY + 5) + 'px'; // Position below the date cell
+
+                  } else {
+                       tooltip.style.display = 'none';
+                  }
+
+              } catch (error) {
+                  console.error('Error fetching events for tooltip:', error);
+                   tooltip.style.display = 'none';
+              }
+          }, 300); // Small delay before showing tooltip
+      }
+
+      function handleMouseOut(event) {
+           // Clear the timeout
+           if (currentTimeout) {
+               clearTimeout(currentTimeout);
+               currentTimeout = null;
+           }
+          // Hide the tooltip and remove highlight
+          tooltip.style.display = 'none';
+           event.currentTarget.classList.remove('hover-highlight');
+      }
+
+       // Re-attach listeners when the calendar view changes
+        calendar.on('datesSet', function() {
+            attachDateHoverListeners();
+        });
+
+
+    });
+
+     // Set active sidebar link
+    const sidebarLinks = document.querySelectorAll('.sidebar-link');
+    const currentPath = window.location.pathname;
+    sidebarLinks.forEach(link => {
+      if (link.getAttribute('href') === currentPath) {
+        link.classList.add('active');
+      } else {
+        link.classList.remove('active');
+      }
+    });
+  </script>
+</body>
+</html> 

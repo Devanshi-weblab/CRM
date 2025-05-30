@@ -74,11 +74,17 @@
             <% }); %>
           </select>
         </div>
-        <% if (selectedStatus) { %>
-          <a href="/clients" class="inline-flex items-center px-4 py-2 mt-5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
-            <i class="fas fa-times mr-2"></i> Clear Filter
+        <div class="flex items-center space-x-2 mt-6">
+          <% if (selectedStatus) { %>
+            <a href="/clients" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
+              <i class="fas fa-times mr-2"></i> Clear Filter
+            </a>
+          <% } %>
+          <a href="/clients/download-report<%= selectedStatus ? '?status=' + selectedStatus : '' %>" 
+             class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md shadow hover:bg-green-700 transition">
+            <i class="fas fa-download mr-2"></i> Download Report
           </a>
-        <% } %>
+        </div>
       </form>
     </div>
 

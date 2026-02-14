@@ -21,6 +21,7 @@
     <% } %>
     <% if (token) { %>
     <form action="/auth/accept-invite" method="POST" class="space-y-4">
+      <%- include('partials/csrf-input') %>
       <input type="hidden" name="token" value="<%= token %>">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>

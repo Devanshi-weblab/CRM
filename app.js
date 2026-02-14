@@ -4,8 +4,10 @@ const mongoose = require('mongoose');
 const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
+const MongoStore = require('connect-mongo').default;
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const errorHandler = require('./middleware/errorHandler');
@@ -47,7 +49,11 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === 'production' }
+  cookie: { secure: process.env.NODE_ENV === 'production' },
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    autoRemove: 'native'
+  })
 }));
 
 // Make user data available to all views
@@ -55,6 +61,13 @@ app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   res.locals.flash = req.session.flash || null;
   req.session.flash = null;
+  next();
+});
+
+// CSRF token: generate and expose to views; validate on state-changing methods
+app.use((req, res, next) => {
+  if (!req.session.csrfToken) req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+  res.locals.csrfToken = req.session.csrfToken;
   next();
 });
 
@@ -69,6 +82,13 @@ app.use((req, res, next) => {
       next();
     })
     .catch(() => next());
+});
+
+// CSRF protection for state-changing requests (skip API routes that use header)
+const { csrfProtection } = require('./middleware/csrf');
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  return csrfProtection(req, res, next);
 });
 
 // Routes

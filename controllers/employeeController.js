@@ -39,6 +39,7 @@ exports.listEmployees = async (req, res, next) => {
     };
 
     res.render('employees/list', { 
+      pageTitle: 'Employees',
       employees,
       sortBy,
       sortOrder: sortOrder === 1 ? 'asc' : 'desc',
@@ -58,7 +59,7 @@ exports.listEmployees = async (req, res, next) => {
 
 // Render add employee form (legacy – direct add with default password)
 exports.renderAddEmployee = (req, res) => {
-  res.render('employees/add');
+  res.render('employees/add', { pageTitle: 'Add New Employee' });
 };
 
 // Handle add employee (legacy)
@@ -83,7 +84,7 @@ exports.addEmployee = async (req, res) => {
 
 // Render invite employee form
 exports.renderInviteEmployee = (req, res) => {
-  res.render('employees/invite');
+  res.render('employees/invite', { pageTitle: 'Invite Employee' });
 };
 
 // Send invitation email and create Invitation
@@ -143,7 +144,7 @@ exports.renderEditEmployee = async (req, res) => {
     role: 'employee'
   });
   if (!employee) return res.status(404).send('Employee not found');
-  res.render('employees/edit', { employee });
+  res.render('employees/edit', { pageTitle: 'Edit Employee', employee });
 };
 
 // Handle update
@@ -214,6 +215,7 @@ exports.getEmployeeLogins = async (req, res, next) => {
     .sort({ loginTime: -1 }); // Sort by newest first
 
     res.render('employees/employeeLogins', {
+      pageTitle: `Login Logs - ${employee.name}`,
       employee,
       logs,
       pagination: {

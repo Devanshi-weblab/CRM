@@ -91,6 +91,7 @@ router.get('/admin', isAuthenticated, isAdmin, asyncHandler(async (req, res) => 
   ensureMeetingRemindersForUser(user.id, companyId).catch((err) => console.error('Meeting reminders:', err));
 
   res.render('admin/admin-dashboard', {
+    pageTitle: 'Admin Dashboard',
     user: req.session.user,
     totalEmployees,
     totalClients,
@@ -106,7 +107,7 @@ router.get('/admin', isAuthenticated, isAdmin, asyncHandler(async (req, res) => 
 router.get('/employee', isAuthenticated, isEmployee, asyncHandler(async (req, res) => {
   const user = req.session.user;
   ensureMeetingRemindersForUser(user.id, user.companyId).catch((err) => console.error('Meeting reminders:', err));
-  res.render('employees/employee-dashboard', { user });
+  res.render('employees/employee-dashboard', { pageTitle: 'Employee Dashboard', user });
 }));
 
 module.exports = router;

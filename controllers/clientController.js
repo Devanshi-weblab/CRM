@@ -79,6 +79,7 @@ exports.getAllClients = async (req, res, next) => {
     };
 
     res.render('clients/list', {
+      pageTitle: 'Clients',
       clients,
       statusOptions,
       employees,
@@ -115,6 +116,7 @@ exports.getAddClientForm = async (req, res, next) => {
       employees = await User.find({ companyId: user.companyId, role: 'employee' }).select('name').lean();
     }
     res.render('clients/add', {
+      pageTitle: 'Add New Client',
       companyId: user.companyId,
       addedBy: user.id,
       statusOptions,
@@ -196,7 +198,7 @@ exports.getClientDetail = async (req, res, next) => {
       .limit(50)
       .lean();
     // Pass in a single object so EJS scope is not polluted (avoids "include is not a function" if any key shadows EJS include)
-    res.render('clients/detail', { viewData: { client, activities, user } });
+    res.render('clients/detail', { pageTitle: `Client - ${client.name}`, viewData: { client, activities, user } });
   } catch (err) {
     next(err);
   }
@@ -219,7 +221,7 @@ exports.getEditForm = async (req, res, next) => {
     if (user.role === 'admin') {
       employees = await User.find({ companyId: user.companyId, role: 'employee' }).select('name').lean();
     }
-    res.render('clients/edit', { viewData: { client, statusOptions, employees, user } });
+    res.render('clients/edit', { pageTitle: 'Edit Client', viewData: { client, statusOptions, employees, user } });
   } catch (err) {
     next(err);
   }

@@ -1,30 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <style>
-    body { font-family: 'Inter', sans-serif; }
-    .sidebar-link.active {
-      background-color: #EEF2FF;
-      color: #4F46E5;
-    }
-    .mobile-menu {
-      transition: transform 0.3s ease-in-out;
-    }
-    .mobile-menu.hidden {
-      transform: translateX(-100%);
-    }
-  </style>
-</head>
-<body class="bg-gray-50 min-h-screen">
-  <%- include('../partials/sidebar') %>
-  <%- include('../partials/sidebar-toggle') %>
-  <main class="flex-1 main-content min-h-screen md:ml-64 pt-24 md:pt-8 p-4 md:p-8">
+<%- include('../partials/layout-start') %>
       <div class="space-y-6">
         <!-- Welcome Section -->
         <div class="bg-white rounded-lg shadow p-6 md:p-8">
@@ -221,10 +195,6 @@
           </div>
         </div>
       </div>
-  </main>
-
-  <%- include('../partials/footer') %>
-
   <script>
     // Function to check if the context is secure
     function isSecureContext() {
@@ -289,5 +259,4 @@
       document.addEventListener('DOMContentLoaded', getLocation);
     }
   </script>
-</body>
-</html>
+<%- include('../partials/layout-end') %>

@@ -1,19 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
 <% var client = viewData.client, activities = viewData.activities, user = viewData.user; %>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Client - <%= client.name %></title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <style>body { font-family: 'Inter', sans-serif; }</style>
-</head>
-<body class="bg-gray-50 min-h-screen">
-  <%- include('../partials/sidebar') %>
-  <%- include('../partials/sidebar-toggle') %>
-  <main class="flex-1 main-content min-h-screen md:ml-64 pt-24 md:pt-8 p-4 md:p-8">
+<%- include('../partials/layout-start') %>
     <div class="max-w-4xl mx-auto">
       <div class="flex items-center justify-between mb-6">
         <div>
@@ -90,7 +76,6 @@
         </ul>
       </div>
     </div>
-  </main>
   <script>
     (function() {
       const clientId = '<%= client._id %>';
@@ -179,6 +164,4 @@
       });
     })();
   </script>
-  <%- include('../partials/footer') %>
-</body>
-</html>
+<%- include('../partials/layout-end') %>

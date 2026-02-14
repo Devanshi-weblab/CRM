@@ -3,7 +3,7 @@ const User = require('../models/User');
 
 exports.renderProfile = async (req, res) => {
   const user = await User.findById(req.session.user.id);
-  res.render('profile', { user });
+  res.render('profile', { pageTitle: 'User Profile', user });
 };
 
 exports.updatePassword = async (req, res) => {

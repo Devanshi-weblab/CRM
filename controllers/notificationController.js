@@ -20,7 +20,7 @@ exports.list = async (req, res, next) => {
       return res.json({ notifications });
     }
     const unreadCount = await Notification.countDocuments({ userId: user.id, read: false });
-    res.render('notifications/list', { notifications, unreadCount, user });
+    res.render('notifications/list', { pageTitle: 'Notifications', notifications, unreadCount, user });
   } catch (err) {
     next(err);
   }

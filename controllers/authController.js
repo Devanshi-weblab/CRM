@@ -2,9 +2,12 @@ const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Company = require('../models/Company');
+const StatusOption = require('../models/StatusOption');
 const LoginLog = require('../models/LoginLog');
 const Invitation = require('../models/Invitation');
 require('dotenv').config();
+
+const DEFAULT_STATUS_OPTIONS = ['Lead', 'Qualified', 'Proposal', 'Won', 'Lost'];
 
 exports.renderLogin = (req, res) => {
   res.render('login', { error: null });
@@ -25,9 +28,11 @@ exports.signup = async (req, res, next) => {
 
     // Check or create company
     let company = await Company.findOne({ name: companyName });
+    let companyJustCreated = false;
     if (!company) {
       company = new Company({ name: companyName });
       await company.save();
+      companyJustCreated = true;
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -41,6 +46,17 @@ exports.signup = async (req, res, next) => {
     });
 
     await newUser.save();
+
+    if (companyJustCreated) {
+      await StatusOption.insertMany(
+        DEFAULT_STATUS_OPTIONS.map((name) => ({
+          name,
+          companyId: company._id,
+          createdBy: newUser._id
+        }))
+      );
+    }
+
     res.redirect('/auth/login');
   } catch (err) {
     next(err);

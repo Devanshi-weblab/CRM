@@ -1,21 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clients</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <style>
-    body { font-family: 'Inter', sans-serif; }
-    .table-improved tbody tr:hover { background-color: rgba(238, 242, 255, 0.8); }
-  </style>
-</head>
-<body class="bg-gray-50 min-h-screen">
-  <%- include('../partials/sidebar') %>
-  <%- include('../partials/sidebar-toggle') %>
-  <main class="flex-1 main-content min-h-screen md:ml-64 pt-24 md:pt-8 p-4 md:p-8">
+<%- include('../partials/layout-start') %>
   <div class="max-w-6xl mx-auto">
     <div class="flex items-center justify-between mb-8">
       <h2 class="text-2xl font-bold text-gray-900">Clients</h2>
@@ -167,15 +150,16 @@
               <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= client.addedBy?.name || 'Unknown' %></td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center space-x-2">
-                  <a href="/clients/<%= client._id %>" class="inline-flex items-center justify-center w-8 h-8 rounded bg-indigo-500 text-white hover:bg-indigo-600" title="View">
+                  <a href="/clients/<%= client._id %>" class="inline-flex items-center justify-center w-8 h-8 rounded bg-indigo-500 text-white hover:bg-indigo-600" title="View" aria-label="View client">
                     <i class="fas fa-eye"></i>
                   </a>
-                  <a href="/clients/edit/<%= client._id %>" class="inline-flex items-center justify-center w-8 h-8 rounded bg-yellow-400 text-white hover:bg-yellow-500" title="Edit">
+                  <a href="/clients/edit/<%= client._id %>" class="inline-flex items-center justify-center w-8 h-8 rounded bg-yellow-400 text-white hover:bg-yellow-500" title="Edit" aria-label="Edit client">
                     <i class="fas fa-edit"></i>
                   </a>
-                  <form action="/clients/delete/<%= client._id %>" method="POST" class="inline-block">
+                  <form action="/clients/delete/<%= client._id %>" method="POST" class="inline-block" data-delete-form>
+                    <%- include('../partials/csrf-input') %>
                     <input type="hidden" name="userId" value="<%= client.addedBy?._id %>">
-                    <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500 text-white hover:bg-red-600" title="Delete" onclick="return confirm('Are you sure?')">
+                    <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500 text-white hover:bg-red-600" title="Delete" aria-label="Delete client" onclick="var f=this.closest('form');if(f&&window.openDeleteConfirm) openDeleteConfirm('Are you sure you want to delete this client?', function(){ f.submit(); });">
                       <i class="fas fa-trash"></i>
                     </button>
                   </form>
@@ -190,6 +174,7 @@
 
     <script>
     (function() {
+      function csrfHeader() { var m = document.querySelector('meta[name="csrf-token"]'); return m ? m.getAttribute('content') : ''; }
       var bar = document.getElementById('bulkActionsBar');
       var countEl = document.getElementById('bulkSelectedCount');
       var selectAll = document.getElementById('selectAllClients');
@@ -234,7 +219,7 @@
         var status = document.getElementById('bulkStatus').value;
         fetch('/clients/bulk-update', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrfHeader() },
           body: JSON.stringify({ ids: ids, status: status })
         }).then(function(r) { return r.json(); })
           .then(function(data) {
@@ -250,7 +235,7 @@
         if (!assignedTo) { alert('Select an employee'); return; }
         fetch('/clients/bulk-assign', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrfHeader() },
           body: JSON.stringify({ ids: ids, assignedTo: assignedTo })
         }).then(function(r) { return r.json(); })
           .then(function(data) {
@@ -265,7 +250,7 @@
         if (!confirm('Are you sure you want to delete ' + ids.length + ' client(s)? This cannot be undone.')) return;
         fetch('/clients/bulk-delete', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrfHeader() },
           body: JSON.stringify({ ids: ids })
         }).then(function(r) { return r.json(); })
           .then(function(data) {
@@ -278,9 +263,10 @@
 
     <% if (clients.length > 0) { %>
     <!-- Pagination -->
-    <div class="mt-6 flex items-center justify-between">
+    <div class="mt-6 flex items-center justify-between flex-wrap gap-2">
       <div class="text-sm text-gray-700">
-        Showing <span class="font-medium"><%= (pagination.page - 1) * 20 + 1 %></span> to 
+        Page <span class="font-medium"><%= pagination.page %></span> of <span class="font-medium"><%= pagination.totalPages %></span>
+        — Showing <span class="font-medium"><%= (pagination.page - 1) * 20 + 1 %></span> to 
         <span class="font-medium"><%= Math.min(pagination.page * 20, pagination.totalClients) %></span> of 
         <span class="font-medium"><%= pagination.totalClients %></span> clients
       </div>
@@ -299,7 +285,4 @@
     </div>
     <% } %>
   </div>
-  </main>
-  <%- include('../partials/footer') %>
-</body>
-</html>
+<%- include('../partials/layout-end') %>

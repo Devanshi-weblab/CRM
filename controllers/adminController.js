@@ -33,6 +33,7 @@ exports.getStatusOptions = async (req, res, next) => {
             return s ? '?' + s : '';
         };
         res.render('admin/status-options', {
+            pageTitle: 'Manage Status Options',
             statusOptions,
             sortBy,
             sortOrder: sortOrder === 1 ? 'asc' : 'desc',

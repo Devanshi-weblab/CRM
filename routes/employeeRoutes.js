@@ -1,17 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const LoginLog = require('../models/LoginLog');
-const User = require('../models/User');
 const employeeController = require('../controllers/employeeController');
+const { isAuthenticated, isAdmin } = require('../middleware/auth');
+const { employeeAddEditRules, inviteEmployeeRules, handleValidation, handleInviteValidation } = require('../validators/employeeValidators');
+const asyncHandler = require('../middleware/asyncHandler');
 
-// Employee CRUD routes (Admin only)
-router.get('/', employeeController.listEmployees);
+router.use(isAuthenticated, isAdmin);
+
+router.get('/', asyncHandler(employeeController.listEmployees));
 router.get('/add', employeeController.renderAddEmployee);
-router.post('/add', employeeController.addEmployee);
-router.get('/edit/:id', employeeController.renderEditEmployee);
-router.post('/edit/:id', employeeController.updateEmployee);
-router.post('/delete/:id', employeeController.deleteEmployee);
-router.get('/logins/:id', employeeController.getEmployeeLogins);
-
+router.post('/add', employeeAddEditRules, handleValidation, asyncHandler(employeeController.addEmployee));
+router.get('/invite', employeeController.renderInviteEmployee);
+router.post('/invite', inviteEmployeeRules, handleInviteValidation, asyncHandler(employeeController.inviteEmployee));
+router.get('/edit/:id', asyncHandler(employeeController.renderEditEmployee));
+router.post('/edit/:id', employeeAddEditRules, handleValidation, asyncHandler(employeeController.updateEmployee));
+router.post('/delete/:id', asyncHandler(employeeController.deleteEmployee));
+router.get('/logins/:id', asyncHandler(employeeController.getEmployeeLogins));
 
 module.exports = router;

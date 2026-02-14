@@ -1,0 +1,75 @@
+<script>
+(function() {
+  var SIDEBAR_STORAGE_KEY = 'crm-sidebar-collapsed';
+  var btn = document.getElementById('mobileMenuBtn');
+  var collapseBtn = document.getElementById('sidebarCollapseBtn');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+  var body = document.body;
+
+  function isDesktop() { return window.innerWidth >= 768; }
+
+  function setCollapsed(collapsed) {
+    if (collapsed) body.classList.add('sidebar-collapsed');
+    else body.classList.remove('sidebar-collapsed');
+    try { localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? 'true' : 'false'); } catch (e) {}
+  }
+
+  function isCollapsed() { return body.classList.contains('sidebar-collapsed'); }
+
+  function toggleCollapse() {
+    if (!isDesktop()) return;
+    setCollapsed(!isCollapsed());
+  }
+
+  function restoreSidebarState() {
+    if (!isDesktop()) return;
+    try {
+      var saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      if (saved === 'true') setCollapsed(true);
+      else if (saved === 'false') setCollapsed(false);
+    } catch (e) {}
+  }
+
+  if (sidebar) {
+    var path = window.location.pathname;
+    sidebar.querySelectorAll('.sidebar-link').forEach(function(link) {
+      var href = link.getAttribute('href');
+      if (href && path === href) link.classList.add('bg-indigo-50', 'text-indigo-600');
+    });
+  }
+
+  restoreSidebarState();
+
+  function closeSidebar() {
+    body.classList.remove('sidebar-open');
+    if (overlay) overlay.classList.add('hidden');
+  }
+
+  function toggleMobile() {
+    if (isDesktop()) return;
+    body.classList.toggle('sidebar-open');
+    if (overlay) overlay.classList.toggle('hidden');
+  }
+
+  window.addEventListener('resize', function() {
+    if (isDesktop()) closeSidebar();
+  });
+
+  if (btn) btn.addEventListener('click', toggleMobile);
+  if (overlay) overlay.addEventListener('click', closeSidebar);
+  if (collapseBtn) collapseBtn.addEventListener('click', toggleCollapse);
+
+  // Form submit loading state
+  document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      var submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+      if (submitBtn && !submitBtn.disabled) {
+        submitBtn.disabled = true;
+        submitBtn.setAttribute('data-original-html', submitBtn.innerHTML);
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+      }
+    });
+  });
+})();
+</script>

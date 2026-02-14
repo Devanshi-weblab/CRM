@@ -1,0 +1,53 @@
+<script>
+(function() {
+  var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  function showError(input, msg) {
+    var wrap = input.closest('div');
+    var err = wrap.querySelector('.field-error');
+    if (err) err.remove();
+    if (!msg) return;
+    var el = document.createElement('p');
+    el.className = 'field-error text-red-600 text-xs mt-1';
+    el.textContent = msg;
+    wrap.appendChild(el);
+  }
+  function validateForm(form) {
+    var valid = true;
+    form.querySelectorAll('.field-error').forEach(function(e) { e.remove(); });
+    form.querySelectorAll('[required]').forEach(function(input) {
+      if (input.type === 'hidden') return;
+      var v = (input.value || '').trim();
+      if (!v) { showError(input, 'Required'); valid = false; }
+      else if (input.type === 'email' && !emailRe.test(v)) { showError(input, 'Invalid email'); valid = false; }
+      else showError(input, '');
+    });
+    form.querySelectorAll('input[type="email"]:not([required])').forEach(function(input) {
+      var v = (input.value || '').trim();
+      if (v && !emailRe.test(v)) { showError(input, 'Invalid email'); valid = false; }
+    });
+    return valid;
+  }
+  function initFormLoading() {
+    document.querySelectorAll('form[data-loading]').forEach(function(form) {
+      if (form.dataset.loadingInit) return;
+      form.dataset.loadingInit = '1';
+      form.addEventListener('submit', function(ev) {
+        if (!validateForm(form)) { ev.preventDefault(); return; }
+        var btn = form.querySelector('button[type="submit"], input[type="submit"]');
+        if (btn && !btn.disabled) {
+          btn.disabled = true;
+          var origHtml = btn.innerHTML;
+          btn.innerHTML = '<span class="inline-flex items-center"><i class="fas fa-spinner fa-spin mr-2"></i>Saving...</span>';
+          btn.dataset.originalContent = origHtml;
+          setTimeout(function() {
+            btn.disabled = false;
+            if (btn.dataset.originalContent) btn.innerHTML = btn.dataset.originalContent;
+          }, 10000);
+        }
+      });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFormLoading);
+  else initFormLoading();
+})();
+</script>

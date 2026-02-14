@@ -1,0 +1,30 @@
+<% if (typeof flash !== 'undefined' && flash && flash.message) { %>
+<div class="flash-toast-container fixed top-4 right-4 z-[9998] space-y-2 max-w-sm w-full pointer-events-none px-4 md:px-0" aria-live="polite">
+  <div class="toast pointer-events-auto flex items-start gap-3 p-4 rounded-lg shadow-lg border transition-opacity duration-300 <%= flash.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-green-50 border-green-200 text-green-800' %>">
+    <span class="flex-shrink-0 mt-0.5">
+      <% if (flash.type === 'error') { %>
+        <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+      <% } else { %>
+        <i class="fas fa-check-circle text-green-500 text-lg"></i>
+      <% } %>
+    </span>
+    <p class="text-sm font-medium flex-1"><%= flash.message %></p>
+    <button type="button" onclick="dismissToast()" class="flex-shrink-0 text-gray-400 hover:text-gray-600" aria-label="Dismiss">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+</div>
+<script>
+(function() {
+  function dismiss() {
+    document.querySelectorAll('.flash-toast-container').forEach(function(container) {
+      var toast = container.querySelector('.toast');
+      if (toast) toast.style.opacity = '0';
+      setTimeout(function() { container.style.display = 'none'; }, 300);
+    });
+  }
+  window.dismissToast = dismiss;
+  setTimeout(dismiss, 4500);
+})();
+</script>
+<% } %>

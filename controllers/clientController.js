@@ -1,48 +1,62 @@
 const Client = require('../models/Client');
 const StatusOption = require('../models/StatusOption');
+const User = require('../models/User');
+const Activity = require('../models/Activity');
 const ExcelJS = require('exceljs');
+const mongoose = require('mongoose');
+const { notifyClientAdded, notifyClientAssigned, notifyBulkAssigned } = require('../services/notificationService');
 
 // GET all clients
-exports.getAllClients = async (req, res) => {
+exports.getAllClients = async (req, res, next) => {
   try {
     const user = req.session.user;
     if (!user) return res.redirect('/auth/login');
 
-    // Get status options for the filter dropdown
     const statusOptions = await StatusOption.find({ companyId: user.companyId });
 
-    // Build query based on status filter
+    // Normalize query params (can be arrays when form has duplicate field names)
+    const single = (v) => (Array.isArray(v) ? v[0] : v);
+    const statusVal = String(single(req.query.status) || '').trim();
+    const assignedVal = String(single(req.query.assigned) || '').trim();
+    const q = String(single(req.query.q) || '').trim();
+
     const query = { companyId: user.companyId };
-    if (req.query.status) {
-      query.status = req.query.status;
+    if (statusVal) query.status = statusVal;
+    // "My clients" for employees; only set assignedTo when value is valid to avoid CastError
+    if (assignedVal === 'me') query.assignedTo = user.id;
+    else if (assignedVal && mongoose.Types.ObjectId.isValid(assignedVal)) query.assignedTo = assignedVal;
+
+    // Search by name, email, or phone
+    if (q) {
+      const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      query.$or = [
+        { name: regex },
+        { email: regex },
+        { contactNumber: regex }
+      ];
     }
 
-    // Pagination
     const page = parseInt(req.query.page) || 1;
     const limit = 20;
     const skip = (page - 1) * limit;
 
-    // Get total count for pagination
+    const sortBy = String(single(req.query.sort) || '').trim() || 'createdAt';
+    const sortOrder = (single(req.query.order) === 'asc') ? 1 : -1;
+    const sortObj = sortBy === 'name' ? { name: sortOrder } : { createdAt: -1 };
+
     const totalClients = await Client.countDocuments(query);
     const totalPages = Math.ceil(totalClients / limit);
 
     const clients = await Client.find(query)
       .populate('addedBy', 'name')
+      .populate('assignedTo', 'name')
       .populate('status', 'name color')
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 }); // Sort by newest first
+      .sort(sortObj);
 
-    // Initialize status counts with all status options
     const statusCounts = {};
-    
-    // Add count for clients with no status
-    statusCounts.noStatus = await Client.countDocuments({ 
-      companyId: user.companyId, 
-      status: { $exists: false } 
-    });
-
-    // Get counts for each status option
+    statusCounts.noStatus = await Client.countDocuments({ companyId: user.companyId, status: { $exists: false } });
     for (const statusOption of statusOptions) {
       statusCounts[statusOption._id.toString()] = await Client.countDocuments({
         companyId: user.companyId,
@@ -50,12 +64,32 @@ exports.getAllClients = async (req, res) => {
       });
     }
 
-    res.render('clients/list', { 
+    let employees = [];
+    if (user.role === 'admin') {
+      employees = await User.find({ companyId: user.companyId, role: 'employee' }).select('name').lean();
+    }
+
+    const buildQuery = (overrides = {}) => {
+      const params = { ...req.query, ...overrides };
+      const s = Object.entries(params)
+        .filter(([, v]) => v != null && v !== '')
+        .map(([k, v]) => `${k}=${encodeURIComponent(Array.isArray(v) ? (v[0] || '') : v)}`)
+        .join('&');
+      return s ? '?' + s : '';
+    };
+
+    res.render('clients/list', {
       clients,
       statusOptions,
-      selectedStatus: req.query.status || '',
+      employees,
+      selectedStatus: statusVal,
+      searchQ: q,
+      assignedFilter: assignedVal,
       statusCounts,
       user,
+      buildQuery,
+      sortBy,
+      sortOrder: sortOrder === 1 ? 'asc' : 'desc',
       pagination: {
         page,
         totalPages,
@@ -65,26 +99,30 @@ exports.getAllClients = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).send(err.message);
+    next(err);
   }
 };
 
 // GET form to add client
-exports.getAddClientForm = async (req, res) => {
+exports.getAddClientForm = async (req, res, next) => {
   const user = req.session.user;
   if (!user) return res.redirect('/auth/login');
 
   try {
     const statusOptions = await StatusOption.find({ companyId: user.companyId });
-    console.log(statusOptions);
-    console.log(user.companyId );
+    let employees = [];
+    if (user.role === 'admin') {
+      employees = await User.find({ companyId: user.companyId, role: 'employee' }).select('name').lean();
+    }
     res.render('clients/add', {
       companyId: user.companyId,
       addedBy: user.id,
-      statusOptions
+      statusOptions,
+      employees,
+      user
     });
   } catch (err) {
-    res.status(500).send(err.message);
+    next(err);
   }
 };
 
@@ -102,34 +140,104 @@ exports.addClient = async (req, res) => {
       meetingDate: req.body.meetingDate,
       notes: req.body.notes,
       status: req.body.status,
+      assignedTo: user.role === 'admin' && req.body.assignedTo ? req.body.assignedTo : undefined,
       companyId: user.companyId,
       addedBy: user.id
     });
 
     await client.save();
+    try {
+      const addedByUser = { id: user.id, name: user.name, role: user.role };
+      const clientObj = { _id: client._id, name: client.name, assignedTo: client.assignedTo };
+      await notifyClientAdded({ client: clientObj, addedByUser, companyId: user.companyId });
+      if (client.assignedTo) {
+        const assignedToId = client.assignedTo._id ? client.assignedTo._id.toString() : client.assignedTo.toString();
+        if (assignedToId !== user.id) {
+          await notifyClientAssigned({
+            clientId: client._id,
+            clientName: client.name,
+            assignedToUserId: assignedToId,
+            assignedByName: user.name,
+            companyId: user.companyId
+          });
+        }
+      }
+    } catch (notifyErr) {
+      console.error('Notification error:', notifyErr);
+    }
+    req.session.flash = { type: 'success', message: 'Client added successfully.' };
     res.redirect('/clients');
   } catch (err) {
-    res.status(500).send(err.message);
+    req.session.flash = { type: 'error', message: err.message };
+    res.redirect('/clients/add');
+  }
+};
+
+// GET client detail (with activities)
+exports.getClientDetail = async (req, res, next) => {
+  try {
+    const user = req.session.user;
+    if (!user) return res.redirect('/auth/login');
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(404).send('Not found');
+
+    const client = await Client.findOne({
+      _id: req.params.id,
+      companyId: user.companyId
+    })
+      .populate('addedBy', 'name')
+      .populate('assignedTo', 'name')
+      .populate('status', 'name')
+      .lean();
+    if (!client) return res.status(404).send('Client not found');
+
+    const activities = await Activity.find({ clientId: client._id, companyId: user.companyId })
+      .populate('userId', 'name')
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+    // Pass in a single object so EJS scope is not polluted (avoids "include is not a function" if any key shadows EJS include)
+    res.render('clients/detail', { viewData: { client, activities, user } });
+  } catch (err) {
+    next(err);
   }
 };
 
 // GET edit form
-exports.getEditForm = async (req, res) => {
+exports.getEditForm = async (req, res, next) => {
   try {
-    const client = await Client.findById(req.params.id);
+    const user = req.session.user;
+    if (!user) return res.redirect('/auth/login');
+
+    const client = await Client.findOne({
+      _id: req.params.id,
+      companyId: user.companyId
+    }).lean();
     if (!client) return res.status(404).send('Client not found');
-    
-    const statusOptions = await StatusOption.find({ companyId: client.companyId });
-    res.render('clients/edit', { client, statusOptions });
+
+    const statusOptions = await StatusOption.find({ companyId: user.companyId }).lean();
+    let employees = [];
+    if (user.role === 'admin') {
+      employees = await User.find({ companyId: user.companyId, role: 'employee' }).select('name').lean();
+    }
+    res.render('clients/edit', { viewData: { client, statusOptions, employees, user } });
   } catch (err) {
-    res.status(500).send(err.message);
+    next(err);
   }
 };
 
 // POST update client
 exports.updateClient = async (req, res) => {
   try {
-    await Client.findByIdAndUpdate(req.params.id, {
+    const user = req.session.user;
+    if (!user) return res.redirect('/auth/login');
+
+    const client = await Client.findOne({
+      _id: req.params.id,
+      companyId: user.companyId
+    });
+    if (!client) return res.status(404).send('Client not found');
+
+    const update = {
       name: req.body.name,
       contactNumber: req.body.contactNumber,
       email: req.body.email,
@@ -137,17 +245,44 @@ exports.updateClient = async (req, res) => {
       meetingDate: req.body.meetingDate,
       notes: req.body.notes,
       status: req.body.status
-    });
+    };
+    const previousAssignedTo = client.assignedTo ? client.assignedTo.toString() : null;
+    const newAssignedTo = (user.role === 'admin' && req.body.assignedTo != null && req.body.assignedTo !== '') ? String(req.body.assignedTo).trim() : null;
+    if (user.role === 'admin') {
+      update.assignedTo = newAssignedTo || null;
+    }
+    await Client.findByIdAndUpdate(req.params.id, update);
+    try {
+      if (newAssignedTo && newAssignedTo !== previousAssignedTo) {
+        await notifyClientAssigned({
+          clientId: req.params.id,
+          clientName: update.name || client.name,
+          assignedToUserId: newAssignedTo,
+          assignedByName: user.name,
+          companyId: user.companyId
+        });
+      }
+    } catch (notifyErr) {
+      console.error('Notification error:', notifyErr);
+    }
+    req.session.flash = { type: 'success', message: 'Client updated successfully.' };
     res.redirect('/clients');
   } catch (err) {
-    res.status(500).send(err.message);
+    req.session.flash = { type: 'error', message: err.message || 'Failed to update client.' };
+    res.redirect('/clients/edit/' + req.params.id);
   }
 };
 
 // POST delete client
-exports.deleteClient = async (req, res) => {
+exports.deleteClient = async (req, res, next) => {
   try {
-    const client = await Client.findById(req.params.id);
+    const user = req.session.user;
+    if (!user) return res.redirect('/auth/login');
+
+    const client = await Client.findOne({
+      _id: req.params.id,
+      companyId: user.companyId
+    });
     if (!client) return res.status(404).send('Client not found');
 
     if (client.addedBy.toString() !== req.body.userId) {
@@ -155,18 +290,97 @@ exports.deleteClient = async (req, res) => {
     }
 
     await Client.findByIdAndDelete(req.params.id);
+    req.session.flash = { type: 'success', message: 'Client deleted.' };
     res.redirect('/clients');
   } catch (err) {
-    res.status(500).send(err.message);
+    next(err);
+  }
+};
+
+// POST /clients/bulk-update - bulk update status
+exports.bulkUpdateStatus = async (req, res, next) => {
+  try {
+    const user = req.session.user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : (req.body.ids ? [req.body.ids] : []);
+    const status = req.body.status;
+    if (!ids.length) return res.status(400).json({ error: 'No clients selected.' });
+
+    const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+    const result = await Client.updateMany(
+      { _id: { $in: validIds }, companyId: user.companyId },
+      { $set: { status: status || null } }
+    );
+    req.session.flash = { type: 'success', message: `${result.modifiedCount} client(s) updated.` };
+    res.json({ ok: true, modifiedCount: result.modifiedCount });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /clients/bulk-assign - bulk assign to employee (admin only)
+exports.bulkAssign = async (req, res, next) => {
+  try {
+    const user = req.session.user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    if (user.role !== 'admin') return res.status(403).json({ error: 'Only admin can bulk assign.' });
+
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : (req.body.ids ? [req.body.ids] : []);
+    const assignedTo = (req.body.assignedTo || '').trim();
+    if (!ids.length) return res.status(400).json({ error: 'No clients selected.' });
+    if (!assignedTo) return res.status(400).json({ error: 'Select an employee to assign.' });
+
+    const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+    const result = await Client.updateMany(
+      { _id: { $in: validIds }, companyId: user.companyId },
+      { $set: { assignedTo } }
+    );
+    try {
+      await notifyBulkAssigned({
+        userId: assignedTo,
+        companyId: user.companyId,
+        count: result.modifiedCount,
+        assignedByName: user.name
+      });
+    } catch (e) {
+      console.error('Bulk assign notification:', e);
+    }
+    req.session.flash = { type: 'success', message: `${result.modifiedCount} client(s) assigned.` };
+    res.json({ ok: true, modifiedCount: result.modifiedCount });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /clients/bulk-delete - bulk delete (admin can delete any; employee only their own)
+exports.bulkDelete = async (req, res, next) => {
+  try {
+    const user = req.session.user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : (req.body.ids ? [req.body.ids] : []);
+    if (!ids.length) return res.status(400).json({ error: 'No clients selected.' });
+
+    const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+    const query = { _id: { $in: validIds }, companyId: user.companyId };
+    if (user.role !== 'admin') query.addedBy = user.id;
+    const result = await Client.deleteMany(query);
+    req.session.flash = { type: 'success', message: `${result.deletedCount} client(s) deleted.` };
+    res.json({ ok: true, deletedCount: result.deletedCount });
+  } catch (err) {
+    next(err);
   }
 };
 
 // Download client report
-exports.downloadReport = async (req, res) => {
+exports.downloadReport = async (req, res, next) => {
   try {
+    const user = req.session.user;
+    if (!user) return res.redirect('/auth/login');
+
     const { status } = req.query;
-    let query = {};
-    
+    const query = { companyId: user.companyId };
     if (status) {
       query.status = status;
     }
@@ -225,9 +439,7 @@ exports.downloadReport = async (req, res) => {
     res.end();
 
   } catch (error) {
-    console.error('Error generating report:', error);
-    req.flash('error', 'Failed to generate report');
-    res.redirect('/clients');
+    next(error);
   }
 };
 

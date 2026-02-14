@@ -9,50 +9,14 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
     body { font-family: 'Inter', sans-serif; }
+    .table-improved tbody tr:hover { background-color: rgba(238, 242, 255, 0.8); }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-  <% if (user && user.role === 'admin') { %>
-    <%- include('../partials/navbar') %>
-  <% } else { %>
-    <%- include('../partials/employee-navbar') %>
-  <% } %>
-  <div class="max-w-6xl mx-auto py-10 px-4">
-    <a href="<%= user && user.role === 'admin' ? '/dashboard/admin' : '/dashboard/employee' %>" class="inline-flex items-center px-4 py-2 ...">
-      <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
-    </a>
-
-    <!-- Status Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <!-- No Status -->
-      <div class="bg-white rounded-lg shadow p-6 border-l-4 border-gray-500">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-600">No Status</p>
-            <p class="text-2xl font-semibold text-gray-900"><%= statusCounts.noStatus || 0 %></p>
-          </div>
-          <div class="bg-gray-100 p-3 rounded-full">
-            <i class="fas fa-question text-gray-500"></i>
-          </div>
-        </div>
-      </div>
-
-      <!-- Status Options -->
-      <% statusOptions.forEach(function(option) { %>
-        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-indigo-500">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-600"><%= option.name %></p>
-              <p class="text-2xl font-semibold text-gray-900"><%= statusCounts[option._id.toString()] || 0 %></p>
-            </div>
-            <div class="bg-indigo-100 p-3 rounded-full">
-              <i class="fas fa-tag text-indigo-500"></i>
-            </div>
-          </div>
-        </div>
-      <% }); %>
-    </div>
-
+  <%- include('../partials/sidebar') %>
+  <%- include('../partials/sidebar-toggle') %>
+  <main class="flex-1 main-content min-h-screen md:ml-64 pt-24 md:pt-8 p-4 md:p-8">
+  <div class="max-w-6xl mx-auto">
     <div class="flex items-center justify-between mb-8">
       <h2 class="text-2xl font-bold text-gray-900">Clients</h2>
       <a href="/clients/add" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md shadow hover:bg-indigo-700 transition">
@@ -60,81 +24,259 @@
       </a>
     </div>
 
-    <!-- Status Filter -->
-    <div class="mb-6">
-      <form action="/clients" method="GET" class="flex items-center space-x-4">
-        <div class="flex-1 max-w-xs">
-          <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
-          <select name="status" id="status" onchange="this.form.submit()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-            <option value="">All Statuses</option>
-            <% statusOptions.forEach(function(option) { %>
-              <option value="<%= option._id %>" <%= selectedStatus === option._id.toString() ? 'selected' : '' %>>
-                <%= option.name %>
-              </option>
+    <!-- Search and Filters -->
+    <div class="mb-6 flex flex-wrap items-end gap-4">
+      <form action="/clients" method="GET" id="filterForm" class="flex flex-wrap items-end gap-4">
+        <div class="max-w-xs">
+          <label for="searchQ" class="block text-sm font-medium text-gray-700 mb-1">Search (name, email, phone)</label>
+          <input type="text" name="q" id="searchQ" value="<%= typeof searchQ !== 'undefined' ? searchQ : '' %>" placeholder="Search..." 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div class="max-w-[140px]">
+          <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select name="status" id="status" onchange="this.form.submit()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">All</option>
+            <% statusOptions.forEach(function(option) { %> 
+              <option value="<%= option._id %>" <%= selectedStatus === option._id.toString() ? 'selected' : '' %>><%= option.name %></option>
             <% }); %>
           </select>
         </div>
-        <div class="flex items-center space-x-2 mt-6">
-          <% if (selectedStatus) { %>
-            <a href="/clients" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
-              <i class="fas fa-times mr-2"></i> Clear Filter
-            </a>
-          <% } %>
-          <a href="/clients/download-report<%= selectedStatus ? '?status=' + selectedStatus : '' %>" 
-             class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md shadow hover:bg-green-700 transition">
-            <i class="fas fa-download mr-2"></i> Download Report
-          </a>
+        <% if (user.role === 'admin' && employees && employees.length) { %>
+        <div class="max-w-[160px]">
+          <label for="assigned" class="block text-sm font-medium text-gray-700 mb-1">Assigned</label>
+          <select name="assigned" id="assigned" onchange="this.form.submit()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">All</option>
+            <% employees.forEach(function(emp) { %>
+              <option value="<%= emp._id %>" <%= assignedFilter === emp._id.toString() ? 'selected' : '' %>><%= emp.name %></option>
+            <% }); %>
+          </select>
         </div>
+        <% } else { %>
+        <div class="max-w-[140px]">
+          <label for="assigned" class="block text-sm font-medium text-gray-700 mb-1">View</label>
+          <select name="assigned" id="assigned" onchange="this.form.submit()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">All clients</option>
+            <option value="me" <%= assignedFilter === 'me' ? 'selected' : '' %>>My clients</option>
+          </select>
+        </div>
+        <% } %>
+        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Apply</button>
       </form>
+      <a href="/clients/download-report<%= (selectedStatus ? '?status=' + selectedStatus : '') %>" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md shadow hover:bg-green-700 transition">
+        <i class="fas fa-download mr-2"></i> Download Report
+      </a>
+    </div>
+    <!-- Debounced search submit -->
+    <script>
+    (function(){
+      var t;
+      document.getElementById('searchQ').addEventListener('input', function(){
+        clearTimeout(t);
+        t = setTimeout(function(){ document.getElementById('filterForm').submit(); }, 400);
+      });
+    })();
+    </script>
+
+    <!-- Bulk actions bar (hidden until selection) -->
+    <div id="bulkActionsBar" class="hidden mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg shadow-sm">
+      <div class="flex flex-wrap items-center gap-4">
+        <span id="bulkSelectedCount" class="font-medium text-gray-800">0 selected</span>
+        <div class="flex flex-wrap items-center gap-3">
+          <label class="text-sm text-gray-600">Update status:</label>
+          <select id="bulkStatus" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500">
+            <option value="">— No change —</option>
+            <% statusOptions.forEach(function(option) { %>
+              <option value="<%= option._id %>"><%= option.name %></option>
+            <% }); %>
+          </select>
+          <button type="button" id="bulkUpdateStatusBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700">Apply status</button>
+        </div>
+        <% if (user.role === 'admin' && employees && employees.length) { %>
+        <div class="flex flex-wrap items-center gap-3">
+          <label class="text-sm text-gray-600">Assign to:</label>
+          <select id="bulkAssignTo" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500">
+            <option value="">— Select —</option>
+            <% employees.forEach(function(emp) { %>
+              <option value="<%= emp._id %>"><%= emp.name %></option>
+            <% }); %>
+          </select>
+          <button type="button" id="bulkAssignBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700">Assign</button>
+        </div>
+        <% } %>
+        <button type="button" id="bulkDeleteBtn" class="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700">Delete selected</button>
+        <button type="button" id="bulkClearSelection" class="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm font-medium">Clear selection</button>
+      </div>
     </div>
 
-    <div class="overflow-x-auto bg-white rounded-lg shadow">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
+    <div class="overflow-auto max-h-[70vh] bg-white rounded-lg shadow table-scroll-wrap">
+      <% if (clients.length === 0) { %>
+      <div class="empty-state text-center py-16 px-4">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 text-gray-400 mb-4">
+          <i class="fas fa-users text-3xl"></i>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No clients yet</h3>
+        <p class="text-gray-500 mb-6 max-w-sm mx-auto">Add your first client to get started.</p>
+        <a href="/clients/add" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md shadow hover:bg-indigo-700 transition">
+          <i class="fas fa-user-plus mr-2"></i> Add Client
+        </a>
+      </div>
+      <% } else { %>
+      <table class="table-improved min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50 sticky top-0 z-10 shadow-sm">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+            <th class="px-4 py-3 text-left">
+              <input type="checkbox" id="selectAllClients" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" title="Select all on this page">
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <a href="/clients<%= buildQuery({ sort: 'name', order: sortBy === 'name' && sortOrder === 'asc' ? 'desc' : 'asc', page: 1 }) %>" class="inline-flex items-center gap-1 group hover:text-indigo-600">
+                Name
+                <% if (sortBy === 'name') { %>
+                  <i class="fas fa-sort-<%= sortOrder === 'asc' ? 'up' : 'down' %> text-indigo-600"></i>
+                <% } else { %>
+                  <i class="fas fa-sort text-gray-400 group-hover:text-indigo-500"></i>
+                <% } %>
+              </a>
+            </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meeting Date</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Added By</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          <% clients.forEach(client => { %>
-            <tr>
+          <% clients.forEach((client, i) => { %>
+            <tr class="<%= i % 2 === 0 ? 'bg-white' : 'bg-gray-50' %> hover:bg-indigo-50 transition-colors">
+              <td class="px-4 py-4 whitespace-nowrap">
+                <input type="checkbox" class="client-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" value="<%= client._id %>" data-added-by="<%= client.addedBy && (client.addedBy._id || client.addedBy) %>">
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= client.name %></td>
               <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= client.contactNumber %></td>
               <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= client.email %></td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <% if (client.status) { %>
-                  <span class="px-2 py-1 rounded text-sm bg-gray-100 text-gray-800">
-                    <%= client.status.name %>
-                  </span>
+                  <span class="px-2 py-1 rounded text-sm bg-gray-100 text-gray-800"><%= client.status.name %></span>
                 <% } else { %>
                   <span class="text-gray-500">No Status</span>
                 <% } %>
               </td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= client.assignedTo ? client.assignedTo.name : '—' %></td>
               <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= client.meetingDate ? client.meetingDate.toDateString() : 'N/A' %></td>
               <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= client.addedBy?.name || 'Unknown' %></td>
-              <td class="px-6 py-4 whitespace-nowrap flex space-x-2">
-                <a href="/clients/edit/<%= client._id %>" class="inline-flex items-center px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500 text-xs font-semibold">
-                  <i class="fas fa-edit mr-1"></i> Edit
-                </a>
-                <form action="/clients/delete/<%= client._id %>" method="POST" style="display:inline;">
-                  <input type="hidden" name="userId" value="<%= client.addedBy?._id %>">
-                  <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs font-semibold" onclick="return confirm('Are you sure?')">
-                    <i class="fas fa-trash mr-1"></i> Delete
-                  </button>
-                </form>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center space-x-2">
+                  <a href="/clients/<%= client._id %>" class="inline-flex items-center justify-center w-8 h-8 rounded bg-indigo-500 text-white hover:bg-indigo-600" title="View">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  <a href="/clients/edit/<%= client._id %>" class="inline-flex items-center justify-center w-8 h-8 rounded bg-yellow-400 text-white hover:bg-yellow-500" title="Edit">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <form action="/clients/delete/<%= client._id %>" method="POST" class="inline-block">
+                    <input type="hidden" name="userId" value="<%= client.addedBy?._id %>">
+                    <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500 text-white hover:bg-red-600" title="Delete" onclick="return confirm('Are you sure?')">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </form>
+                </div>
               </td>
             </tr>
           <% }) %>
         </tbody>
       </table>
+      <% } %>
     </div>
 
+    <script>
+    (function() {
+      var bar = document.getElementById('bulkActionsBar');
+      var countEl = document.getElementById('bulkSelectedCount');
+      var selectAll = document.getElementById('selectAllClients');
+      var checkboxes = document.querySelectorAll('.client-checkbox');
+
+      function updateBar() {
+        var checked = document.querySelectorAll('.client-checkbox:checked');
+        var n = checked.length;
+        if (countEl) countEl.textContent = n + ' selected';
+        if (bar) {
+          if (n > 0) bar.classList.remove('hidden');
+          else bar.classList.add('hidden');
+        }
+        if (selectAll) selectAll.checked = n === checkboxes.length && n > 0;
+      }
+
+      if (selectAll) {
+        selectAll.addEventListener('change', function() {
+          checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+          updateBar();
+        });
+      }
+      checkboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateBar);
+      });
+
+      document.getElementById('bulkClearSelection') && document.getElementById('bulkClearSelection').addEventListener('click', function() {
+        checkboxes.forEach(function(cb) { cb.checked = false; });
+        if (selectAll) selectAll.checked = false;
+        updateBar();
+      });
+
+      function getSelectedIds() {
+        var ids = [];
+        document.querySelectorAll('.client-checkbox:checked').forEach(function(cb) { ids.push(cb.value); });
+        return ids;
+      }
+
+      document.getElementById('bulkUpdateStatusBtn') && document.getElementById('bulkUpdateStatusBtn').addEventListener('click', function() {
+        var ids = getSelectedIds();
+        if (!ids.length) return;
+        var status = document.getElementById('bulkStatus').value;
+        fetch('/clients/bulk-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: JSON.stringify({ ids: ids, status: status })
+        }).then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.ok) window.location.reload();
+            else alert(data.error || 'Failed');
+          }).catch(function() { alert('Request failed'); });
+      });
+
+      document.getElementById('bulkAssignBtn') && document.getElementById('bulkAssignBtn').addEventListener('click', function() {
+        var ids = getSelectedIds();
+        if (!ids.length) return;
+        var assignedTo = document.getElementById('bulkAssignTo').value;
+        if (!assignedTo) { alert('Select an employee'); return; }
+        fetch('/clients/bulk-assign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: JSON.stringify({ ids: ids, assignedTo: assignedTo })
+        }).then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.ok) window.location.reload();
+            else alert(data.error || 'Failed');
+          }).catch(function() { alert('Request failed'); });
+      });
+
+      document.getElementById('bulkDeleteBtn') && document.getElementById('bulkDeleteBtn').addEventListener('click', function() {
+        var ids = getSelectedIds();
+        if (!ids.length) return;
+        if (!confirm('Are you sure you want to delete ' + ids.length + ' client(s)? This cannot be undone.')) return;
+        fetch('/clients/bulk-delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: JSON.stringify({ ids: ids })
+        }).then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.ok) window.location.reload();
+            else alert(data.error || 'Failed');
+          }).catch(function() { alert('Request failed'); });
+      });
+    })();
+    </script>
+
+    <% if (clients.length > 0) { %>
     <!-- Pagination -->
     <div class="mt-6 flex items-center justify-between">
       <div class="text-sm text-gray-700">
@@ -144,25 +286,20 @@
       </div>
       <div class="flex space-x-2">
         <% if (pagination.hasPrevPage) { %>
-          <a href="/clients?page=<%= pagination.page - 1 %><%= selectedStatus ? '&status=' + selectedStatus : '' %>" 
-             class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+          <a href="/clients<%= buildQuery({ page: pagination.page - 1 }) %>" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
             <i class="fas fa-chevron-left mr-2"></i> Previous
           </a>
         <% } %>
-        
         <% if (pagination.hasNextPage) { %>
-          <a href="/clients?page=<%= pagination.page + 1 %><%= selectedStatus ? '&status=' + selectedStatus : '' %>" 
-             class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+          <a href="/clients<%= buildQuery({ page: pagination.page + 1 }) %>" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
             Next <i class="fas fa-chevron-right ml-2"></i>
           </a>
         <% } %>
       </div>
     </div>
+    <% } %>
   </div>
-  <% if (user && user.role === 'admin') { %>
-    <%- include('../partials/footer') %>
-  <% } else { %>
-    <%- include('../partials/employee-footer') %>
-  <% } %>
+  </main>
+  <%- include('../partials/footer') %>
 </body>
 </html>

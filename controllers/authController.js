@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Company = require('../models/Company');
 const LoginLog = require('../models/LoginLog');
+const Invitation = require('../models/Invitation');
 require('dotenv').config();
 
 exports.renderLogin = (req, res) => {
@@ -13,13 +14,13 @@ exports.renderSignup = (req, res) => {
   res.render('signup');
 };
 
-exports.signup = async (req, res) => {
+exports.signup = async (req, res, next) => {
   try {
     const { name, email, password, confirmPassword, companyName } = req.body;
 
     // Server-side password confirmation
     if (password !== confirmPassword) {
-      return res.status(400).send('Passwords do not matchhh.');
+      return res.status(400).send('Passwords do not match.');
     }
 
     // Check or create company
@@ -42,11 +43,11 @@ exports.signup = async (req, res) => {
     await newUser.save();
     res.redirect('/auth/login');
   } catch (err) {
-    res.status(500).send('Error during signup: ' + err.message);
+    next(err);
   }
 };
 
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -92,7 +93,74 @@ exports.login = async (req, res) => {
       res.redirect('/dashboard/employee');
     }
   } catch (err) {
-    res.render('login', { error: 'An error occurred during login. Please try again.' });
+    next(err);
+  }
+};
+
+exports.getAcceptInvite = async (req, res, next) => {
+  try {
+    const invitation = await Invitation.findOne({
+      token: req.params.token,
+      acceptedAt: null
+    });
+    if (!invitation || invitation.expiresAt < new Date()) {
+      return res.render('accept-invite', { error: 'Invalid or expired invitation link.', token: null });
+    }
+    res.render('accept-invite', { error: null, token: req.params.token, email: invitation.email });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.postAcceptInvite = async (req, res, next) => {
+  try {
+    const { token, tempPassword, name, newPassword, confirmNewPassword } = req.body;
+    const invitation = await Invitation.findOne({
+      token,
+      acceptedAt: null
+    });
+    if (!invitation || invitation.expiresAt < new Date()) {
+      return res.render('accept-invite', { error: 'Invalid or expired invitation link.', token: null });
+    }
+    if (invitation.tempPassword !== tempPassword) {
+      return res.render('accept-invite', {
+        error: 'Incorrect temporary password.',
+        token,
+        email: invitation.email
+      });
+    }
+    if (!newPassword || newPassword.length < 6) {
+      return res.render('accept-invite', {
+        error: 'Password must be at least 6 characters.',
+        token,
+        email: invitation.email
+      });
+    }
+    if (newPassword !== confirmNewPassword) {
+      return res.render('accept-invite', {
+        error: 'Passwords do not match.',
+        token,
+        email: invitation.email
+      });
+    }
+    const existingUser = await User.findOne({ email: invitation.email });
+    if (existingUser) {
+      return res.render('accept-invite', { error: 'This email is already registered.', token: null });
+    }
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await User.create({
+      name: (name || invitation.email).trim() || invitation.email,
+      email: invitation.email,
+      passwordHash,
+      role: 'employee',
+      companyId: invitation.companyId
+    });
+    invitation.acceptedAt = new Date();
+    await invitation.save();
+    req.session.flash = { type: 'success', message: 'Account created. You can now log in.' };
+    res.redirect('/auth/login');
+  } catch (err) {
+    next(err);
   }
 };
 
@@ -105,7 +173,7 @@ exports.logout = (req, res) => {
   });
 };
 
-exports.updateLocation = async (req, res) => {
+exports.updateLocation = async (req, res, next) => {
   try {
     const { latitude, longitude, timestamp } = req.body;
     const userId = req.session.user.id;
@@ -156,7 +224,6 @@ exports.updateLocation = async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error('Location update error:', err);
-    res.status(500).json({ success: false, error: err.message });
+    next(err);
   }
 };

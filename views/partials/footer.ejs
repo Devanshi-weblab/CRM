@@ -1,3 +1,6 @@
+<%- include('toast') %>
 <footer class="bg-white border-t mt-10 py-4 text-center text-gray-500 text-sm">
-  &copy; <%= new Date().getFullYear() %> CRM Admin. All rights reserved.
-</footer> 
+  &copy; <%= new Date().getFullYear() %> <%= (typeof user !== 'undefined' && user && user.role === 'admin') ? 'CRM Admin' : 'CRM Employee' %>. All rights reserved.
+</footer>
+<%- include('layout-scripts') %>
+<%- include('form-loading') %> 

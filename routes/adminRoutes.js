@@ -2,15 +2,12 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const { isAuthenticated, isAdmin } = require('../middleware/auth');
+const asyncHandler = require('../middleware/asyncHandler');
 
-// Apply admin middleware to all routes
 router.use(isAuthenticated, isAdmin);
 
-// Admin dashboard
-router.get('/', adminController.getDashboard);
-
-// Status Options Management
-router.get('/status-options', adminController.getStatusOptions);
+router.get('/', asyncHandler(adminController.getDashboard));
+router.get('/status-options', asyncHandler(adminController.getStatusOptions));
 
 // Meeting Calendar route
 router.get('/meetings', (req, res) => {

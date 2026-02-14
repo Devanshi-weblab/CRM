@@ -1,17 +1,17 @@
 const StatusOption = require('../models/StatusOption');
 
 // GET all status options for a company
-exports.getStatusOptions = async (req, res) => {
+exports.getStatusOptions = async (req, res, next) => {
   try {
     const statusOptions = await StatusOption.find({ companyId: req.session.user.companyId });
     res.json(statusOptions);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 
 // POST create new status option
-exports.createStatusOption = async (req, res) => {
+exports.createStatusOption = async (req, res, next) => {
   try {
     const user = req.session.user;
     if (!user) return res.status(401).json({ error: 'Not authenticated' });
@@ -25,12 +25,12 @@ exports.createStatusOption = async (req, res) => {
     await statusOption.save();
     res.json(statusOption);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 
 // DELETE status option
-exports.deleteStatusOption = async (req, res) => {
+exports.deleteStatusOption = async (req, res, next) => {
   try {
     const user = req.session.user;
     if (!user) return res.status(401).json({ error: 'Not authenticated' });
@@ -44,9 +44,9 @@ exports.deleteStatusOption = async (req, res) => {
       return res.status(404).json({ error: 'Status option not found' });
     }
 
-    await statusOption.remove();
+    await statusOption.deleteOne();
     res.json({ message: 'Status option deleted successfully' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 }; 

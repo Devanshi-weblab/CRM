@@ -8,6 +8,7 @@ const clientSchema = new mongoose.Schema({
   meetingDate: { type: Date },
   notes: { type: String },
   status: { type: mongoose.Schema.Types.ObjectId, ref: 'StatusOption' },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
   addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
